@@ -47,14 +47,14 @@ All three may use one Stripe account. Distinguish them with separate Products an
 
 | Item | Current state |
 |------|---------------|
-| Railway project | `AI-Software-Operations-Studio` |
+| Railway project | `hearty-enjoyment` |
 | Web service | `operations-studio-web` - deployed successfully |
-| Railway URL | [operations-studio-web-production.up.railway.app](https://operations-studio-web-production.up.railway.app) |
-| Health endpoint | [Live health](https://operations-studio-web-production.up.railway.app/health/) |
-| PostgreSQL | Managed service connected; health passing |
-| Redis | Managed service connected; health passing |
-| Worker | Created and configured; held at zero replicas pending non-HTTP health-check finalization |
-| Beat scheduler | Created and configured; held at zero replicas pending non-HTTP health-check finalization |
+| Railway URL | [operations-studio-web-production-d4ad.up.railway.app](https://operations-studio-web-production-d4ad.up.railway.app) |
+| Health endpoint | [Live health](https://operations-studio-web-production-d4ad.up.railway.app/health/) |
+| PostgreSQL | Dedicated `Postgres-V92Q` service connected; health passing |
+| Redis | Existing managed Redis, isolated to logical database 15; health passing |
+| Worker | Pending per-service non-HTTP health-check configuration |
+| Beat scheduler | Pending per-service non-HTTP health-check configuration |
 | Studio billing | Disabled until Studio-specific Stripe Products, Prices, and webhook are approved and configured |
 | Custom domain | Not assigned yet; use the generated Railway URL for validation |
 
