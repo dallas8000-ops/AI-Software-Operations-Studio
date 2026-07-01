@@ -20,6 +20,7 @@ import AiCopilotPanel from "../components/AiCopilotPanel";
 import CiGatePanel from "../components/CiGatePanel";
 import DatabasePanel from "../components/DatabasePanel";
 import MonitoringPanel from "../components/MonitoringPanel";
+import QualityPanel from "../components/QualityPanel";
 import DeployConfigPanel from "../components/DeployConfigPanel";
 import DeployNextSteps from "../components/DeployNextSteps";
 import DiagnosePanel from "../components/DiagnosePanel";
@@ -157,12 +158,12 @@ export default function ProjectPage() {
       let title: string | undefined;
       let body: string | undefined;
       if (handoff) {
-        title = `Automation Center setup — ${project?.name || slug}`;
+        title = `Operations Studio setup — ${project?.name || slug}`;
         body = `${handoff.prDescription}\n\n---\n\n## Test checklist\n\n${handoff.testChecklist}\n\n---\n\n## Ops runbook\n\n${handoff.opsRunbook}`;
       } else {
         try {
           const pack = await aiApi.handoffPack(slug);
-          title = `Automation Center setup — ${project?.name || slug}`;
+          title = `Operations Studio setup — ${project?.name || slug}`;
           body = `${pack.prDescription}\n\n---\n\n## Test checklist\n\n${pack.testChecklist}`;
         } catch {
           /* open PR with default body if handoff fails */
@@ -547,7 +548,7 @@ export default function ProjectPage() {
           {scanPathLooksWrong && portfolioDemo && (
             <div className="alert alert-error">
               Wrong scan path — setup must run in your real app folder, not inside{" "}
-              <strong>Deployment-Stripe-center</strong>. Reload the page to auto-fix, or set:{" "}
+              <strong>Operations Studio</strong>. Reload the page to auto-fix, or set:{" "}
               <code>{portfolioDemo.localPath}</code>
             </div>
           )}
@@ -655,8 +656,10 @@ export default function ProjectPage() {
       {/* ──────────────────────────────────────────── SECTION: HEALTH & READINESS ──────────────────────────────────────────── */}
       <div className="section-header">
         <h2>Health & Readiness</h2>
-        <p className="muted">Diagnostics and readiness checks</p>
+        <p className="muted">Code quality, diagnostics, and readiness checks</p>
       </div>
+
+      <QualityPanel projectSlug={slug} />
 
       <div className="grid-2">
         <ReadinessPanel

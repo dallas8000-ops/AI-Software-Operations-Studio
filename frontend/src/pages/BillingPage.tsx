@@ -87,7 +87,7 @@ export default function BillingPage() {
 
   async function checkout(priceId: string) {
     if (!licenseDomain.trim()) {
-      setError("Enter the domain where you will deploy Stripe Installer");
+      setError("Enter the domain where you will deploy Operations Studio");
       return;
     }
     setBusy(priceId);
@@ -116,7 +116,7 @@ export default function BillingPage() {
   async function orgCheckout(priceId: string) {
     if (!selectedOrg) return;
     if (!licenseDomain.trim()) {
-      setError("Enter the domain where you will deploy Stripe Installer");
+      setError("Enter the domain where you will deploy Operations Studio");
       return;
     }
     setBusy(`org-${priceId}`);
@@ -149,7 +149,7 @@ export default function BillingPage() {
         <div>
           <h1>Billing</h1>
           <p className="muted">
-            Your <strong>Stripe Installer</strong> subscription — separate from Stripe keys in each project&apos;s
+            Your <strong>Operations Studio</strong> subscription — separate from Stripe keys in each project&apos;s
             vault.
           </p>
         </div>
@@ -175,7 +175,7 @@ export default function BillingPage() {
             deploy — without it.
           </p>
           <p className="muted">
-            To bill users for <em>Stripe Installer itself</em> (dogfooding our checkout flow), add these to{" "}
+            To bill users for <em>Operations Studio itself</em> (dogfooding our checkout flow), add these to{" "}
             <code>backend/.env</code> and restart the backend:
           </p>
           <pre className="verify-pre billing-env-pre">{`SAAS_STRIPE_SECRET_KEY=sk_test_...
@@ -334,7 +334,7 @@ SAAS_BILLING_RETURN_URL=http://127.0.0.1:5173`}</pre>
               spellCheck={false}
             />
             <span className="muted vault-hint">
-              Registered on your license — must match the URL where you run Stripe Installer.
+              Registered on your license — must match the URL where you run Operations Studio.
             </span>
           </label>
         )}

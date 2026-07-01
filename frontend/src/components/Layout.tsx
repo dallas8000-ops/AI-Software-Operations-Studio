@@ -6,7 +6,10 @@ import { APP_SHORT_NAME } from "../config/branding";
 import { useAuth } from "../auth/AuthContext";
 
 const NAV = [
-  { to: "/", label: "Projects", match: (path: string) => path === "/" || path.startsWith("/projects/") },
+  { to: "/", label: "Studio", match: (path: string) => path === "/" },
+  { to: "/projects", label: "Projects", match: (path: string) => path.startsWith("/projects") },
+  { to: "/quality", label: "Quality", match: (path: string) => path.startsWith("/quality") },
+  { to: "/workflows", label: "Workflows", match: (path: string) => path.startsWith("/workflows") },
   { to: "/deploy", label: "Deploy", match: (path: string) => path.startsWith("/deploy") },
   { to: "/agency", label: "Agency", match: (path: string) => path.startsWith("/agency") },
   { to: "/billing", label: "Billing", match: (path: string) => path.startsWith("/billing") },
@@ -80,7 +83,7 @@ export default function Layout() {
 
         {slug && (
           <div className="topbar-breadcrumb" aria-label="Breadcrumb">
-            <NavLink to="/" className="topbar-breadcrumb-link">
+            <NavLink to="/projects" className="topbar-breadcrumb-link">
               Projects
             </NavLink>
             <span className="topbar-breadcrumb-sep" aria-hidden>

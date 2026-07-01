@@ -1,4 +1,6 @@
 import os
+import sys
+import tempfile
 from datetime import timedelta
 from pathlib import Path
 
@@ -44,6 +46,12 @@ if os.environ.get("DATABASE_URL"):
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me-in-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+RUNNING_TESTS = "test" in sys.argv
+if RUNNING_TESTS:
+    # Never let tests read or write the developer's real per-project vault.
+    os.environ["STRIPE_INSTALLER_DATA_DIR"] = str(
+        Path(tempfile.gettempdir()) / "ai-software-operations-studio-tests"
+    )
 
 _env_hosts = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
 ALLOWED_HOSTS = _env_hosts or ["localhost", "127.0.0.1"]
@@ -77,6 +85,7 @@ INSTALLED_APPS = [
     "apps.api_transfer",
     "apps.ai_assistant",
     "apps.licenses",
+    "apps.quality",
 ]
 
 MIDDLEWARE = [
@@ -217,6 +226,11 @@ STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-05-27.dahlia")
 
 # Public app URL (invites, billing return, license validation server default)
 APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL") or _public_app_url()
+
+# Read-only Specwright adapter. Empty by default so the Studio degrades safely
+# until a local or staging Specwright API is explicitly connected.
+SPECWRIGHT_API_URL = os.environ.get("SPECWRIGHT_API_URL", "").strip().rstrip("/")
+SPECWRIGHT_API_TIMEOUT_SECONDS = float(os.environ.get("SPECWRIGHT_API_TIMEOUT_SECONDS", "3"))
 
 # License enforcement settings
 LICENSE_ENFORCEMENT_ENABLED = os.environ.get("LICENSE_ENFORCEMENT_ENABLED", "false").lower() == "true"
@@ -384,7 +398,7 @@ CACHES = {
         "LOCATION": "stripe-installer-default",
     }
 }
-if PRODUCTION_SCALE or (REDIS_URL and not _is_local_redis(REDIS_URL)):
+if not RUNNING_TESTS and (PRODUCTION_SCALE or (REDIS_URL and not _is_local_redis(REDIS_URL))):
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
@@ -399,7 +413,7 @@ CHANNEL_LAYERS = {
     }
 }
 
-if os.environ.get("CHANNEL_LAYER_INMEMORY", "").lower() == "true":
+if RUNNING_TESTS or os.environ.get("CHANNEL_LAYER_INMEMORY", "").lower() == "true":
     CHANNEL_LAYERS = {
         "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
     }
@@ -413,7 +427,7 @@ if ON_RAILWAY:
     USE_X_FORWARDED_HOST = True
 
 # Production security — active when DJANGO_DEBUG is false (local dev keeps DEBUG=true in .env).
-if not DEBUG:
+if not DEBUG and not RUNNING_TESTS:
     SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = os.environ.get("SECURE_HSTS_PRELOAD", "false").lower() == "true"

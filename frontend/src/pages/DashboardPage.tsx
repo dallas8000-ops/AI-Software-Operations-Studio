@@ -116,7 +116,7 @@ export default function DashboardPage() {
         <h2>Portfolio demos (Railway storefronts)</h2>
         <p className="muted">
           Stripe-exempt portfolio apps — not listed under billing projects. Open SilverFox here to push Railway env
-          vars and run full deploy setup (not the Automation Center hub).
+          vars and run full deploy setup (not the Operations Studio hub).
         </p>
         <ul className="project-grid">
           {PORTFOLIO_DEMOS.map((demo) => {

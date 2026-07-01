@@ -26,13 +26,16 @@ PROJECTS_SUBDIR = "projects"
 
 
 def local_vault_path(project_slug: str) -> Path:
-    directory = portfolio_data_dir() / PROJECTS_SUBDIR / project_slug
-    directory.mkdir(parents=True, exist_ok=True)
-    return directory / "vault.json"
+    """Return the mirror path without creating directories during read-only requests."""
+    return portfolio_data_dir() / PROJECTS_SUBDIR / project_slug / "vault.json"
 
 
 def _read_document(project_slug: str) -> dict | None:
-    path = local_vault_path(project_slug)
+    try:
+        path = local_vault_path(project_slug)
+    except OSError as exc:
+        logger.warning("Local vault mirror unavailable for %s: %s", project_slug, exc)
+        return None
     if not path.is_file():
         return None
     try:
@@ -43,8 +46,13 @@ def _read_document(project_slug: str) -> dict | None:
 
 
 def _write_document(project_slug: str, document: dict) -> None:
-    path = local_vault_path(project_slug)
-    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+    try:
+        path = local_vault_path(project_slug)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+    except OSError as exc:
+        logger.warning("Could not write local vault mirror for %s: %s", project_slug, exc)
+        return
     try:
         path.chmod(0o600)
     except OSError:
@@ -74,10 +82,13 @@ def save_secret_to_local(project: Project, secret: VaultSecret, salt: bytes) -> 
 
 def clear_local_vault(project_slug: str) -> bool:
     """Remove the on-disk vault backup for a project. Returns True if a file was deleted."""
-    path = local_vault_path(project_slug)
-    if path.is_file():
-        path.unlink()
-        return True
+    try:
+        path = local_vault_path(project_slug)
+        if path.is_file():
+            path.unlink()
+            return True
+    except OSError as exc:
+        logger.warning("Could not clear local vault mirror for %s: %s", project_slug, exc)
     return False
 
 
@@ -93,9 +104,12 @@ def delete_secret_from_local(project: Project, key_name: str) -> None:
     if secrets:
         _write_document(project.slug, document)
     else:
-        path = local_vault_path(project.slug)
-        if path.is_file():
-            path.unlink()
+        try:
+            path = local_vault_path(project.slug)
+            if path.is_file():
+                path.unlink()
+        except OSError as exc:
+            logger.warning("Could not remove local vault mirror for %s: %s", project.slug, exc)
 
 
 def load_secret_from_local(project: Project, key_name: str) -> str | None:

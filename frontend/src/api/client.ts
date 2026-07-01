@@ -178,6 +178,57 @@ export interface Project {
   stripe_exempt?: boolean;
 }
 
+export interface QualitySummary {
+  connected: boolean;
+  status: "ready" | "unavailable";
+  message?: string;
+  summary?: {
+    totalProjects: number;
+    scoredProjects: number;
+    averageScore: number | null;
+    documentationCoverage: number | null;
+    testCoverage: number | null;
+    driftedThisWeek: number;
+    needsAttention: number;
+  };
+  projects?: Array<{ id: number; name: string; score?: number | null; framework?: string }>;
+}
+
+export const qualityApi = {
+  summary: () => apiFetch<QualitySummary>("/quality/summary/"),
+  getLink: (slug: string) => apiFetch<QualityProjectLink>(`/projects/${slug}/quality/link/`),
+  saveLink: (slug: string, specwrightProjectId: number, specwrightProjectName: string) =>
+    apiFetch<QualityProjectLink>(`/projects/${slug}/quality/link/`, {
+      method: "PUT",
+      body: JSON.stringify({ specwrightProjectId, specwrightProjectName }),
+    }),
+  removeLink: (slug: string) => apiFetch<void>(`/projects/${slug}/quality/link/`, { method: "DELETE" }),
+  projectHealth: (slug: string) => apiFetch<ProjectQualityHealth>(`/projects/${slug}/quality/health/`),
+};
+
+export interface QualityProjectLink {
+  linked: boolean;
+  specwrightProjectId?: number;
+  specwrightProjectName?: string;
+}
+
+export interface ProjectQualityHealth {
+  linked: boolean;
+  connected: boolean;
+  status: "ready" | "unavailable" | "not_linked";
+  message?: string;
+  score?: number | null;
+  grade?: string | null;
+  summary?: string;
+  documentationCoverage?: number | null;
+  testCoverage?: number | null;
+  freshness?: number | null;
+  routeCount?: number;
+  gaps?: { tests: number; documentation: number; criticalRoutes: number };
+  drift?: { detected: boolean; commitsBehind: number; message: string };
+  lastScannedAt?: string | null;
+}
+
 export interface InvitePreview {
   valid: boolean;
   email?: string;

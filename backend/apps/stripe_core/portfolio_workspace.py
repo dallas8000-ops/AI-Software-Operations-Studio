@@ -64,6 +64,11 @@ def is_inside_hub_repo(path: str, project: Project | None = None) -> bool:
         return False
     if not path:
         return False
+    normalized = path.replace("/", "\\").lower()
+    # Pre-merge Deployment Center workspaces remain invalid scan targets after
+    # the control plane is renamed to AI Software Operations Studio.
+    if "\\deployment-stripe-center\\backend\\clone" in normalized:
+        return True
     try:
         resolved = Path(path).resolve()
         resolved.relative_to(HUB_REPO_ROOT)

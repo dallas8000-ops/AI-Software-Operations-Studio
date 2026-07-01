@@ -170,7 +170,7 @@ export default function VaultPanel({
       onUpdate(res.entries, true);
       setVaultNotice(res.message);
     } catch (err) {
-      setVaultError(err instanceof Error ? err.message : "Could not pull keys from Automation Center");
+      setVaultError(err instanceof Error ? err.message : "Could not pull keys from Operations Studio");
     } finally {
       setBusy("");
     }
@@ -186,7 +186,7 @@ export default function VaultPanel({
       const msg = err instanceof Error ? err.message : "Import failed";
       setVaultError(
         msg.includes("No env file")
-          ? "No .env in this repo — use Pull from Automation Center (keys live on the hub project)."
+          ? "No .env in this repo — use Pull from Operations Studio (keys live on the hub project)."
           : msg
       );
     } finally {
@@ -259,7 +259,7 @@ export default function VaultPanel({
               onClick={() => void pullFromHub()}
               disabled={busy === "pull-hub" || !!busy}
             >
-              {busy === "pull-hub" ? "Pulling…" : "Pull from Automation Center"}
+              {busy === "pull-hub" ? "Pulling…" : "Pull from Operations Studio"}
             </button>
           )}
           <button

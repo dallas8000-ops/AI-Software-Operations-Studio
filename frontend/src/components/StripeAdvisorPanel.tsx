@@ -9,8 +9,8 @@ type Props = {
 const WHERE_LABEL: Record<string, string> = {
   stripe_dashboard: "Stripe Dashboard",
   hosting: "Hosting (Railway / Render)",
-  vault: "Automation Center vault",
-  installer: "Automation Center",
+  vault: "Operations Studio vault",
+  installer: "Operations Studio",
 };
 
 function severityClass(severity: string) {

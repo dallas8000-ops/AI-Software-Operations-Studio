@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { orgsApi, projectsApi, type Organization, type Project } from "../api/client";
+import { orgsApi, projectsApi, qualityApi, type Organization, type Project } from "../api/client";
 
 export default function ProjectSettingsPage() {
   const { slug = "" } = useParams();
@@ -19,9 +19,18 @@ export default function ProjectSettingsPage() {
   const [busy, setBusy] = useState("");
   const [pullMessage, setPullMessage] = useState("");
   const [deleteArmed, setDeleteArmed] = useState(false);
+  const [qualityProjectId, setQualityProjectId] = useState("");
+  const [qualityProjectName, setQualityProjectName] = useState("");
+  const [qualityLinked, setQualityLinked] = useState(false);
+  const [qualityMessage, setQualityMessage] = useState("");
 
   useEffect(() => {
     orgsApi.list().then(setOrgs).catch(() => setOrgs([]));
+    qualityApi.getLink(slug).then((link) => {
+      setQualityLinked(link.linked);
+      setQualityProjectId(link.specwrightProjectId ? String(link.specwrightProjectId) : "");
+      setQualityProjectName(link.specwrightProjectName || "");
+    }).catch(() => setQualityMessage("Could not load the quality link."));
     projectsApi
       .get(slug)
       .then((p) => {
@@ -57,6 +66,31 @@ export default function ProjectSettingsPage() {
     } finally {
       setBusy("");
     }
+  }
+
+  async function saveQualityLink(e: FormEvent) {
+    e.preventDefault();
+    const id = Number(qualityProjectId);
+    if (!Number.isInteger(id) || id < 1) {
+      setQualityMessage("Enter a valid Specwright project ID.");
+      return;
+    }
+    setBusy("quality"); setQualityMessage("");
+    try {
+      await qualityApi.saveLink(slug, id, qualityProjectName.trim());
+      setQualityLinked(true); setQualityMessage("Quality project linked. No scan was triggered.");
+    } catch (err) { setQualityMessage(err instanceof Error ? err.message : "Link failed"); }
+    finally { setBusy(""); }
+  }
+
+  async function removeQualityLink() {
+    setBusy("quality"); setQualityMessage("");
+    try {
+      await qualityApi.removeLink(slug);
+      setQualityLinked(false); setQualityProjectId(""); setQualityProjectName("");
+      setQualityMessage("Quality link removed. Specwright data was not deleted.");
+    } catch (err) { setQualityMessage(err instanceof Error ? err.message : "Unlink failed"); }
+    finally { setBusy(""); }
   }
 
   async function runGitPull(asyncMode = false) {
@@ -128,7 +162,7 @@ export default function ProjectSettingsPage() {
             <input value={localPath} onChange={(e) => setLocalPath(e.target.value)} placeholder="C:\Software Projects\YourApp" required />
           </label>
           <p className="muted" style={{ marginTop: "-0.5rem" }}>
-            Your app&apos;s folder on disk. Stripe setup writes files here — never inside Deployment-Stripe-center.
+            Your app&apos;s folder on disk. Setup writes files here — never inside the Operations Studio repository.
           </p>
           <label>
             Git URL
@@ -173,9 +207,26 @@ export default function ProjectSettingsPage() {
       </section>
 
       <section className="card">
+        <div className="quality-section-title">
+          <div><p className="studio-kicker">QUALITY & SPECIFICATIONS</p><h2>Specwright project link</h2></div>
+          <span className={`studio-status ${qualityLinked ? "studio-status-active" : "studio-status-next"}`}>{qualityLinked ? "Linked" : "Not linked"}</span>
+        </div>
+        <p className="muted">Associate records across the two systems without merging databases or triggering a scan.</p>
+        <form className="settings-form quality-link-form" onSubmit={saveQualityLink}>
+          <label>Specwright project ID<input inputMode="numeric" value={qualityProjectId} onChange={(e) => setQualityProjectId(e.target.value)} placeholder="Example: 42" required /></label>
+          <label>Display name (optional)<input value={qualityProjectName} onChange={(e) => setQualityProjectName(e.target.value)} placeholder={project.name} /></label>
+          <div className="page-actions">
+            <button type="submit" className="btn btn-primary" disabled={busy === "quality"}>{busy === "quality" ? "Saving…" : "Save quality link"}</button>
+            {qualityLinked && <button type="button" className="btn btn-ghost" onClick={removeQualityLink} disabled={busy === "quality"}>Unlink</button>}
+          </div>
+          {qualityMessage && <p className="muted" role="status">{qualityMessage}</p>}
+        </form>
+      </section>
+
+      <section className="card">
         <h2>Danger zone</h2>
         <p className="muted">
-          Remove this project and its stored configuration from Automation Center. This does not
+          Remove this project and its stored configuration from Operations Studio. This does not
           delete the source repository or local project folder.
         </p>
         {deleteArmed ? (

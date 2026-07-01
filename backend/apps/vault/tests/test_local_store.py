@@ -97,3 +97,9 @@ class LocalStoreTests(TestCase):
         self.assertIn("STRIPE_PUBLISHABLE_KEY", imported)
         self.assertEqual(get_secret(self.project, "STRIPE_PUBLISHABLE_KEY"), "pk_test_sync")
         self.assertEqual(load_secret_from_local(self.project, "STRIPE_PUBLISHABLE_KEY"), "pk_test_sync")
+
+    def test_unavailable_local_mirror_does_not_break_database_vault(self):
+        with patch("apps.vault.local_store.local_vault_path", side_effect=PermissionError("denied")):
+            set_secret(self.project, "STRIPE_SECRET_KEY", "sk_test_database_only")
+            self.assertEqual(get_secret(self.project, "STRIPE_SECRET_KEY"), "sk_test_database_only")
+            self.assertEqual(sync_project_from_local_store(self.project), [])

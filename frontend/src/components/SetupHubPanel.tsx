@@ -204,7 +204,7 @@ export default function SetupHubPanel({
 
       {status && !status.isHubProject && (
         <div className="alert">
-          Stripe keys are pulled automatically from <strong>Automation Center</strong> when you open this page,
+          Stripe keys are pulled automatically from <strong>Operations Studio</strong> when you open this page,
           verify, or run setup. Expected webhook URL is for <strong>{status.projectName}</strong>, not the hub.
         </div>
       )}
@@ -214,7 +214,7 @@ export default function SetupHubPanel({
           <p>
             Portfolio: <strong>{status.portfolioSummary.stripeBillingCount}</strong> Stripe billing apps in registry.
             Kistie Store, SilverFox, Blog API, and React Store Catalog are portfolio-only (hidden from billing list).
-            API Transfer is merged into Automation Center.
+            API Transfer is integrated into Operations Studio.
           </p>
         </div>
       )}
@@ -371,7 +371,7 @@ export default function SetupHubPanel({
               )}
               {!status.isHubProject && (
                 <p className="muted">
-                  Portfolio-wide gaps are managed from the <strong>Automation Center hub</strong> project.
+                  Portfolio-wide gaps are managed from the <strong>Operations Studio hub</strong> project.
                   Register webhooks here only affects this app when its endpoint is missing.
                 </p>
               )}

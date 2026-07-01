@@ -29,6 +29,7 @@ export default function TransferPage() {
           setAuditValid(Boolean(auditData.valid?.valid));
           setFlagship(
             projects.find((p) => p.slug === "stripe-installer") ||
+              projects.find((p) => p.name.includes("Operations Studio")) ||
               projects.find((p) => p.name.includes("Automation Center")) ||
               projects[0] ||
               null
