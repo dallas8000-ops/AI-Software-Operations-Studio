@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Railway production image — Stripe Installer
+# Railway production image - AI Software Operations Studio
 # manage.py: backend/manage.py (WORKDIR /app/backend)
 # ASGI: config.asgi:application (Daphne — Channels/WebSockets)
 # Startup: /entrypoint.sh — collectstatic → migrate → Daphne (web only)

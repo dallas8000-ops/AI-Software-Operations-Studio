@@ -1,4 +1,15 @@
-# Railway deployment
+# AI Software Operations Studio - Railway deployment
+
+Deploy Studio as a **new Railway project or isolated set of services**. Do not attach this repository to existing Specwright or Deployment-Stripe-center services. Those applications remain independent products with their own databases, variables, domains, and Stripe endpoints.
+
+Recommended Studio service names:
+
+| Service | Purpose |
+|---------|---------|
+| `operations-studio-web` | Public Django/React application |
+| `operations-studio-worker` | Celery background jobs |
+| `operations-studio-beat` | One scheduled-task process |
+| `operations-studio-transfer-worker` | Optional transfer queue processor |
 
 **Recommended:** three-service split (web + worker + beat). See [deploy/RAILWAY-SERVICES.md](../deploy/RAILWAY-SERVICES.md).
 
@@ -14,10 +25,9 @@ Set these in **Railway → your service → Variables** (not only in local `back
 | `DJANGO_SECRET_KEY` | Random 50+ chars |
 | `DJANGO_DEBUG` | `false` |
 | `DATABASE_URL` | Auto-set when you add the **PostgreSQL** plugin |
-| `SAAS_STRIPE_SECRET_KEY` | Your Stripe secret (if billing enabled) |
+| `SAAS_STRIPE_SECRET_KEY` | Studio billing credential; prefer a least-privilege restricted key where supported |
 | `SAAS_STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
 | `SAAS_STRIPE_PRICE_*` | Price IDs for plans |
-| `SAAS_STRIPE_WEBHOOK_SECRET` | From Stripe Dashboard → Webhooks |
 
 ### Vault master key (read this first)
 
@@ -31,8 +41,8 @@ Project secrets (Railway API token, Stripe keys, etc.) are encrypted in Postgres
 **Railway checklist:**
 
 1. Generate once: `python -c "import secrets; print(secrets.token_hex(32))"`
-2. Railway → **stripe-installer-production** (unified service) → **Variables** → set `VAULT_MASTER_KEY` to that value
-3. When merging API Transfer onto the same service, **use one key** — if old services had different keys, pick the key that decrypts live secrets or re-enter secrets after pinning a new key
+2. Railway -> **operations-studio-web** -> **Variables** -> set `VAULT_MASTER_KEY` to that value
+3. Share the same Studio `VAULT_MASTER_KEY` with Studio worker services; do not copy or replace keys in the independent applications
 4. Do **not** rely on `~/.stripe-installer/` on Railway — the filesystem resets on redeploy; the local vault mirror (`projects/*/vault.json`) uses the same master key and does not help if the key is lost
 5. After setting the key, redeploy and verify: `curl https://<your-domain>/health/` shows vault ok; open a project and confirm stored tokens still decrypt
 
@@ -64,6 +74,8 @@ Project secrets (Railway API token, Stripe keys, etc.) are encrypted in Postgres
 | `LICENSE_ENFORCEMENT_ENABLED` | `false` unless licensing deployed copies |
 
 ## Stripe webhooks (production)
+
+Create a Studio-specific endpoint. Do not repoint or disable the existing applications' endpoints during the parallel launch. Zero recent Stripe events can be normal before customer activity; it is neither a delivery failure nor proof of successful delivery.
 
 | Endpoint | URL |
 |----------|-----|
@@ -110,8 +122,11 @@ Railway builds from **git** (`origin/main`), not your uncommitted local files. P
 ## Custom domain
 
 1. Railway → Settings → Networking → Custom Domain.
-2. Set `APP_PUBLIC_URL=https://yourdomain.com` and add the domain to Stripe webhook URLs.
-3. Update `GITHUB_APP_SETUP_URL` if using GitHub App.
+2. First verify the generated `*.up.railway.app` URL and `/health/` response.
+3. Assign a dedicated hostname such as `studio.example.com`; do not reuse either independent application's hostname.
+4. Set `APP_PUBLIC_URL=https://studio.example.com` and use the same origin for CORS and CSRF settings.
+5. Register `https://studio.example.com/api/v1/billing/webhook/` and store its signing secret only in Railway Variables.
+6. Update `GITHUB_APP_SETUP_URL` if using GitHub App.
 
 ## No Render
 

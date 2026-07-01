@@ -1,4 +1,6 @@
-# Railway multi-service split (Phase 1)
+# Operations Studio Railway multi-service deployment
+
+Create these as new Studio services. Do not reuse the Specwright or Deployment-Stripe-center services; parallel operation is the default launch plan.
 
 Run **three services** from this repo (same Dockerfile). This removes the single-instance ceiling: web and Celery workers scale to **N**; beat runs at **exactly 1** replica.
 
@@ -13,15 +15,15 @@ Run **three services** from this repo (same Dockerfile). This removes the single
 
 | Service | `PROCESS_TYPE` | Replicas | Health check | Notes |
 |---------|----------------|----------|--------------|-------|
-| **web** | `web` | 2+ | `GET /health/` | Public domain + TLS here. Runs collectstatic + migrations on start. |
-| **worker** | `worker` | 2+ | none | `celery -A config worker` |
-| **beat** | `beat` | **1** | none | `celery -A config beat` — never scale above 1 |
+| **operations-studio-web** | `web` | 1 initially; 2+ after validation | `GET /health/` | Public domain + TLS here. Runs collectstatic + migrations on start. |
+| **operations-studio-worker** | `worker` | 1 initially; scale as needed | none | `celery -A config worker` |
+| **operations-studio-beat** | `beat` | **1** | none | `celery -A config beat`; never scale above 1 |
 
 Optional fourth service for API Transfer queue processing:
 
 | Service | `PROCESS_TYPE` | Replicas |
 |---------|----------------|----------|
-| **transfer-worker** | `transfer-worker` | 1+ |
+| **operations-studio-transfer-worker** | `transfer-worker` | 1+ |
 
 ## Railway setup
 
