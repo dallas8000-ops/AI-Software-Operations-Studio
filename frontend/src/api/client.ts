@@ -1115,6 +1115,26 @@ export interface DeployPreflightResult {
   railway: Record<string, unknown>;
 }
 
+export interface SyncApprovalPlan {
+  project: { slug: string; name: string };
+  platform: "railway";
+  ready: boolean;
+  target: { hasToken: boolean; hasProjectId: boolean; hasServiceId: boolean };
+  vault: { keyNames: string[]; stripeKeyPairReady: boolean; missingStripeKeys: string[] };
+  payload: { keyNames: string[]; count: number };
+  requiresConfirmation: string;
+  warnings: string[];
+}
+
+export interface SyncApprovalResult {
+  ok: boolean;
+  message: string;
+  pushed: string[];
+  merge?: Record<string, unknown>;
+  environmentId?: string;
+  plan: SyncApprovalPlan;
+}
+
 export const deployApi = {
   postgresStatus: (projectSlug: string) =>
     apiFetch<PostgresStatus>(`/projects/${projectSlug}/postgres/status/`),
@@ -1248,6 +1268,15 @@ export const deployApi = {
       `/projects/${projectSlug}/deploy/env-push/`,
       { method: "POST", body: JSON.stringify(opts) }
     ),
+
+  syncApprovalPlan: (projectSlug: string) =>
+    apiFetch<SyncApprovalPlan>(`/projects/${projectSlug}/deploy/sync-approval/`),
+
+  applySyncApproval: (projectSlug: string, confirmation: string) =>
+    apiFetch<SyncApprovalResult>(`/projects/${projectSlug}/deploy/sync-approval/`, {
+      method: "POST",
+      body: JSON.stringify({ confirmation }),
+    }),
 };
 
 export const aiApi = {

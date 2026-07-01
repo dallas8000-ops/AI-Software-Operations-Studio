@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { projectsApi, qualityApi, transferApi, type MigrationStatus, type Project, type TransferProviderStatus } from "../api/client";
+import {
+  deployApi,
+  projectsApi,
+  qualityApi,
+  transferApi,
+  type MigrationStatus,
+  type Project,
+  type SyncApprovalPlan,
+  type TransferProviderStatus,
+} from "../api/client";
 import SetupHubPanel from "../components/SetupHubPanel";
 
 const RAILWAY_ENV_KEYS = [
@@ -25,6 +34,10 @@ export default function TransferPage() {
   const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
   const [auditValid, setAuditValid] = useState<boolean | null>(null);
   const [migration, setMigration] = useState<MigrationStatus | null>(null);
+  const [syncPlans, setSyncPlans] = useState<Record<string, SyncApprovalPlan>>({});
+  const [confirmations, setConfirmations] = useState<Record<string, string>>({});
+  const [syncBusy, setSyncBusy] = useState<string>("");
+  const [syncNotice, setSyncNotice] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [flagship, setFlagship] = useState<Project | null>(null);
 
@@ -63,6 +76,37 @@ export default function TransferPage() {
     };
   }, []);
 
+  async function prepareSyncPacket(slug: string) {
+    setSyncBusy(`plan:${slug}`);
+    setSyncNotice("");
+    setError(null);
+    try {
+      const plan = await deployApi.syncApprovalPlan(slug);
+      setSyncPlans((current) => ({ ...current, [slug]: plan }));
+      setConfirmations((current) => ({ ...current, [slug]: "" }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not prepare sync packet");
+    } finally {
+      setSyncBusy("");
+    }
+  }
+
+  async function applySyncPacket(slug: string) {
+    const confirmation = confirmations[slug] || "";
+    setSyncBusy(`apply:${slug}`);
+    setSyncNotice("");
+    setError(null);
+    try {
+      const result = await deployApi.applySyncApproval(slug, confirmation);
+      setSyncPlans((current) => ({ ...current, [slug]: result.plan }));
+      setSyncNotice(`${result.message} Pushed keys: ${result.pushed.join(", ") || "none"}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sync was not applied");
+    } finally {
+      setSyncBusy("");
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -75,6 +119,12 @@ export default function TransferPage() {
       {error && (
         <section className="card card-error">
           <p>{error}</p>
+        </section>
+      )}
+
+      {syncNotice && (
+        <section className="card">
+          <p className="text-success">{syncNotice}</p>
         </section>
       )}
 
@@ -200,6 +250,8 @@ export default function TransferPage() {
               const missingRailway = missingKeys(keyNames, RAILWAY_ENV_KEYS);
               const missingStripe = missingKeys(keyNames, STRIPE_ENV_KEYS);
               const stripeCoreReady = keyNames.includes("STRIPE_SECRET_KEY") && keyNames.includes("STRIPE_PUBLISHABLE_KEY");
+              const syncPlan = syncPlans[project.slug];
+              const confirmation = confirmations[project.slug] || "";
               return (
                 <li key={project.slug}>
                   <div>
@@ -213,8 +265,50 @@ export default function TransferPage() {
                         ? keyNames.map((key) => <code key={key}>{key}</code>)
                         : <span className="muted">No vault keys imported yet</span>}
                     </p>
+                    {syncPlan && (
+                      <div className="sync-confirm">
+                        <p className="muted">
+                          Sync packet prepared: {syncPlan.payload.count} env var name(s). Type{" "}
+                          <code>{syncPlan.requiresConfirmation}</code> to enable apply.
+                        </p>
+                        {syncPlan.warnings.length > 0 && (
+                          <ul>
+                            {syncPlan.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                          </ul>
+                        )}
+                        <input
+                          value={confirmation}
+                          onChange={(event) =>
+                            setConfirmations((current) => ({ ...current, [project.slug]: event.target.value }))
+                          }
+                          placeholder={syncPlan.requiresConfirmation}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          disabled={
+                            syncBusy === `apply:${project.slug}` ||
+                            confirmation !== syncPlan.requiresConfirmation ||
+                            !syncPlan.ready
+                          }
+                          onClick={() => applySyncPacket(project.slug)}
+                        >
+                          {syncBusy === `apply:${project.slug}` ? "Applying…" : "Apply Railway sync"}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <Link to={`/projects/${project.slug}`}>Open project →</Link>
+                  <div className="sync-actions">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={syncBusy === `plan:${project.slug}`}
+                      onClick={() => prepareSyncPacket(project.slug)}
+                    >
+                      {syncBusy === `plan:${project.slug}` ? "Preparing…" : "Prepare sync packet"}
+                    </button>
+                    <Link to={`/projects/${project.slug}`}>Open project →</Link>
+                  </div>
                 </li>
               );
             })}

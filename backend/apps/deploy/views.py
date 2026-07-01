@@ -333,6 +333,102 @@ class EnvPushView(ProjectOwnedMixin, APIView):
         return Response(result)
 
 
+class SyncApprovalView(ProjectOwnedMixin, APIView):
+    """Prepare and apply an explicit Railway env sync without exposing secret values."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def _plan(self, project):
+        from apps.vault.models import VaultSecret
+
+        from .env_push import STRIPE_ENV_KEYS, build_env_var_payload
+
+        scan = project.scan_data or {}
+        railway = scan.get("railway") or {}
+        key_names = set(VaultSecret.objects.filter(project=project).values_list("key_name", flat=True))
+        project_id = "RAILWAY_PROJECT_ID" in key_names or bool(railway.get("projectId"))
+        service_id = "RAILWAY_SERVICE_ID" in key_names or bool(railway.get("serviceId"))
+        token = "RAILWAY_API_TOKEN" in key_names
+        target_ready = bool(token and project_id and service_id)
+        env_payload = build_env_var_payload(project)
+        payload_keys = sorted(env_payload)
+        stripe_required = ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"]
+        missing_stripe = [key for key in stripe_required if key not in key_names]
+        confirmation = f"SYNC {project.slug} TO RAILWAY"
+        return {
+            "project": {"slug": project.slug, "name": project.name},
+            "platform": "railway",
+            "ready": target_ready and bool(payload_keys),
+            "target": {
+                "hasToken": token,
+                "hasProjectId": project_id,
+                "hasServiceId": service_id,
+            },
+            "vault": {
+                "keyNames": sorted(key_names),
+                "stripeKeyPairReady": not missing_stripe,
+                "missingStripeKeys": missing_stripe,
+            },
+            "payload": {
+                "keyNames": payload_keys,
+                "count": len(payload_keys),
+            },
+            "requiresConfirmation": confirmation,
+            "warnings": [
+                warning
+                for warning in (
+                    None if token else "RAILWAY_API_TOKEN is missing from the project vault.",
+                    None if project_id else "Railway project ID is missing.",
+                    None if service_id else "Railway service ID is missing.",
+                    None if payload_keys else "No syncable env vars were found in the vault/preset payload.",
+                    "Prefer restricted Stripe API keys (rk_) where possible."
+                    if any(key in key_names for key in STRIPE_ENV_KEYS)
+                    else None,
+                )
+                if warning
+            ],
+        }
+
+    def get(self, request, project_slug: str):
+        project = self.get_project(project_slug, min_role="admin")
+        return Response(self._plan(project))
+
+    def post(self, request, project_slug: str):
+        from .env_push import auto_push_railway_env
+
+        project = self.get_project(project_slug, min_role="admin")
+        plan = self._plan(project)
+        confirmation = str(request.data.get("confirmation") or "").strip()
+        if confirmation != plan["requiresConfirmation"]:
+            return Response(
+                {
+                    "error": "Exact confirmation is required before Railway env sync.",
+                    "requiresConfirmation": plan["requiresConfirmation"],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not plan["ready"]:
+            return Response(
+                {"error": "Sync plan is not ready.", "plan": plan},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            result = auto_push_railway_env(project)
+        except (RuntimeError, ValueError) as exc:
+            return Response({"error": str(exc), "plan": plan}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "ok": True,
+                "message": result.get("message", "Railway environment sync completed."),
+                "pushed": result.get("pushed", []),
+                "merge": result.get("merge", {}),
+                "environmentId": result.get("environmentId"),
+                "plan": self._plan(project),
+            }
+        )
+
+
 class InfraPreviewView(ProjectOwnedMixin, APIView):
     permission_classes = (permissions.IsAuthenticated,)
 

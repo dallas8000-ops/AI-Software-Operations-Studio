@@ -14,6 +14,7 @@ from .views import (
     PostgresSchemaView,
     PostgresStatusView,
     PostgresTestView,
+    SyncApprovalView,
 )
 
 urlpatterns = [
@@ -71,6 +72,11 @@ urlpatterns = [
         "projects/<slug:project_slug>/deploy/env-push/",
         EnvPushView.as_view(),
         name="deploy-env-push",
+    ),
+    path(
+        "projects/<slug:project_slug>/deploy/sync-approval/",
+        SyncApprovalView.as_view(),
+        name="deploy-sync-approval",
     ),
     path(
         "projects/<slug:project_slug>/deploy/infra/preview/",
