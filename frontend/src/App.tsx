@@ -15,6 +15,7 @@ import TransferPage from "./pages/TransferPage";
 import StudioPage from "./pages/StudioPage";
 import QualityPage from "./pages/QualityPage";
 import WorkflowsPage from "./pages/WorkflowsPage";
+import GuidePage from "./pages/GuidePage";
 
 function ProtectedRoute() {
   const { user, loading } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="projects" element={<DashboardPage />} />
           <Route path="quality" element={<QualityPage />} />
           <Route path="workflows" element={<WorkflowsPage />} />
+          <Route path="guide" element={<GuidePage />} />
           <Route path="account/security" element={<AccountSecurityPage />} />
           <Route path="deploy" element={<TransferPage />} />
           <Route path="agency" element={<AgencyPage />} />

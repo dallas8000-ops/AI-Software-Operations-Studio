@@ -10,6 +10,7 @@ const NAV = [
   { to: "/projects", label: "Projects", match: (path: string) => path.startsWith("/projects") },
   { to: "/quality", label: "Quality", match: (path: string) => path.startsWith("/quality") },
   { to: "/workflows", label: "Workflows", match: (path: string) => path.startsWith("/workflows") },
+  { to: "/guide", label: "Guide", match: (path: string) => path.startsWith("/guide") },
   { to: "/deploy", label: "Deploy", match: (path: string) => path.startsWith("/deploy") },
   { to: "/agency", label: "Agency", match: (path: string) => path.startsWith("/agency") },
   { to: "/billing", label: "Billing", match: (path: string) => path.startsWith("/billing") },

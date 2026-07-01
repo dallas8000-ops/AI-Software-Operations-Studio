@@ -41,6 +41,7 @@ export default function StudioPage() {
           <div className="studio-actions">
             <Link className="btn btn-primary" to="/projects">View applications</Link>
             <Link className="btn btn-ghost" to="/deploy">Deployment center</Link>
+            <Link className="btn btn-ghost" to="/guide">How to use the Studio</Link>
           </div>
         </div>
         <div className="studio-signal" aria-label="Studio foundation status">
