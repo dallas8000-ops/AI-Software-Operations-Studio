@@ -107,6 +107,11 @@ export default function TransferPage() {
       const result = await deployApi.applySyncApproval(slug, confirmation);
       setSyncPlans((current) => ({ ...current, [slug]: result.plan }));
       setSyncNotice(`${result.message} Pushed keys: ${result.pushed.join(", ") || "none"}.`);
+      try {
+        setMigration(await qualityApi.migrationStatus());
+      } catch {
+        // Non-blocking: the sync succeeded, but the status summary can refresh on the next page load.
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync was not applied");
     } finally {
@@ -242,6 +247,36 @@ export default function TransferPage() {
             records are already local in Studio. Railway/Stripe settings are only sent outward after a prepared packet
             is reviewed and the exact confirmation phrase is typed.
           </div>
+          <ol className="guide-steps compact">
+            <li>
+              <span>1</span>
+              <div>
+                <strong>Review local migration evidence</strong>
+                <p className="muted">Confirm project records, run history, vault count, and key names look correct.</p>
+              </div>
+            </li>
+            <li>
+              <span>2</span>
+              <div>
+                <strong>Prepare a sync packet</strong>
+                <p className="muted">Studio shows env var names only, never the secret values that will be sent.</p>
+              </div>
+            </li>
+            <li>
+              <span>3</span>
+              <div>
+                <strong>Apply only after explicit approval</strong>
+                <p className="muted">Type the exact confirmation phrase to send that project&apos;s env vars to Railway.</p>
+              </div>
+            </li>
+            <li>
+              <span>4</span>
+              <div>
+                <strong>Verify Stripe and webhooks after traffic</strong>
+                <p className="muted">No Stripe activity means delivery health is unproven, not failed; use a safe test event before cutover.</p>
+              </div>
+            </li>
+          </ol>
           <div className="sync-summary">
             <div>
               <strong>{migration.railwayReadyProjects}/{migration.projects}</strong>
