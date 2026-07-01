@@ -24,9 +24,9 @@ def _redis_check() -> tuple[str, bool]:
 def root(_request):
     return JsonResponse(
         {
-            "service": "Deployment & Stripe Automation Center API",
+            "service": "AI Software Operations Studio API",
             "status": "ok",
-            "ui": getattr(settings, "APP_PUBLIC_URL", "http://localhost:5173"),
+            "ui": "/",
             "api": "/api/v1/",
         }
     )
