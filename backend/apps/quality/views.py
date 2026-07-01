@@ -71,6 +71,7 @@ class MigrationStatusView(APIView):
                 {
                     "slug": project.slug,
                     "name": project.name,
+                    "keyNames": sorted(keys),
                     "hasToken": has_token,
                     "hasProjectId": project_id,
                     "hasServiceId": service_id,

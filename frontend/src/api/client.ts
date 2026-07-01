@@ -224,6 +224,7 @@ export interface MigrationStatus {
   railwayProjects: Array<{
     slug: string;
     name: string;
+    keyNames?: string[];
     hasToken: boolean;
     hasProjectId: boolean;
     hasServiceId: boolean;

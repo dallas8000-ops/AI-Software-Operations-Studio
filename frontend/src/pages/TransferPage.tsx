@@ -1,13 +1,30 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { projectsApi, transferApi, type Project, type TransferProviderStatus } from "../api/client";
+import { projectsApi, qualityApi, transferApi, type MigrationStatus, type Project, type TransferProviderStatus } from "../api/client";
 import SetupHubPanel from "../components/SetupHubPanel";
+
+const RAILWAY_ENV_KEYS = [
+  "RAILWAY_API_TOKEN",
+  "RAILWAY_PROJECT_ID",
+  "RAILWAY_SERVICE_ID",
+] as const;
+
+const STRIPE_ENV_KEYS = [
+  "STRIPE_SECRET_KEY",
+  "STRIPE_PUBLISHABLE_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+] as const;
+
+function missingKeys(keyNames: string[], expected: readonly string[]) {
+  return expected.filter((key) => !keyNames.includes(key));
+}
 
 export default function TransferPage() {
   const [providers, setProviders] = useState<TransferProviderStatus[]>([]);
   const [moduleStatus, setModuleStatus] = useState<string>("loading");
   const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
   const [auditValid, setAuditValid] = useState<boolean | null>(null);
+  const [migration, setMigration] = useState<MigrationStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [flagship, setFlagship] = useState<Project | null>(null);
 
@@ -15,18 +32,20 @@ export default function TransferPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [mod, prov, metricData, auditData, projects] = await Promise.all([
+        const [mod, prov, metricData, auditData, projects, migrationData] = await Promise.all([
           transferApi.moduleStatus(),
           transferApi.providerStatus(),
           transferApi.transferMetrics(),
           transferApi.transferAudit(),
           projectsApi.list(),
+          qualityApi.migrationStatus(),
         ]);
         if (!cancelled) {
           setModuleStatus(mod.status);
           setProviders(prov.providers);
           setMetrics(metricData.summary as Record<string, unknown>);
           setAuditValid(Boolean(auditData.valid?.valid));
+          setMigration(migrationData);
           setFlagship(
             projects.find((p) => p.slug === "stripe-installer") ||
               projects.find((p) => p.name.includes("Operations Studio")) ||
@@ -146,6 +165,66 @@ export default function TransferPage() {
           <code>github.env</code> (local) or project vault keys.
         </p>
       </section>
+
+      {migration && (
+        <section className="card" aria-labelledby="sync-plan-heading">
+          <div className="studio-section-heading">
+            <div>
+              <p className="studio-kicker">GUARDED SYNC PLAN</p>
+              <h2 id="sync-plan-heading">Railway and Stripe environment delivery</h2>
+            </div>
+            <span className="muted">Names only · no values shown</span>
+          </div>
+          <p className="muted">
+            This is the approval checklist before any server-side sync. The Studio can keep secret values encrypted,
+            verify key names, and prepare Railway environment delivery per project. It does not push to Railway,
+            create Stripe objects, or change webhooks from this screen.
+          </p>
+          <div className="sync-summary">
+            <div>
+              <strong>{migration.railwayReadyProjects}/{migration.projects}</strong>
+              <span>Railway target ready</span>
+            </div>
+            <div>
+              <strong>{migration.stripeReadyProjects}/{migration.projects}</strong>
+              <span>Stripe key-pair ready</span>
+            </div>
+            <div>
+              <strong>{migration.secrets}</strong>
+              <span>encrypted records retained</span>
+            </div>
+          </div>
+          <ul className="sync-plan-list">
+            {migration.railwayProjects.map((project) => {
+              const keyNames = project.keyNames ?? [];
+              const missingRailway = missingKeys(keyNames, RAILWAY_ENV_KEYS);
+              const missingStripe = missingKeys(keyNames, STRIPE_ENV_KEYS);
+              const stripeCoreReady = keyNames.includes("STRIPE_SECRET_KEY") && keyNames.includes("STRIPE_PUBLISHABLE_KEY");
+              return (
+                <li key={project.slug}>
+                  <div>
+                    <h3>{project.name}</h3>
+                    <p className="muted">
+                      Railway: {project.ready ? "target mapped" : `missing ${missingRailway.join(", ") || "target mapping"}`} · Stripe:{" "}
+                      {stripeCoreReady ? "key pair present" : `missing ${missingStripe.filter((key) => key !== "STRIPE_WEBHOOK_SECRET").join(", ") || "key pair"}`}
+                    </p>
+                    <p className="key-name-row">
+                      {keyNames.length
+                        ? keyNames.map((key) => <code key={key}>{key}</code>)
+                        : <span className="muted">No vault keys imported yet</span>}
+                    </p>
+                  </div>
+                  <Link to={`/projects/${project.slug}`}>Open project →</Link>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="muted">
+            Stripe note: prefer restricted API keys (<code>rk_</code>) where possible and keep separate keys for test,
+            staging, and production.
+          </p>
+        </section>
+      )}
 
       <section className="card">
         <h2>What&apos;s merged vs planned</h2>

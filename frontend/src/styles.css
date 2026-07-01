@@ -2490,6 +2490,15 @@ input::placeholder {
 .phase-remaining > span { color: #fca5a5; background: rgba(248,113,113,.12); }
 .assignment-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .assignment-checkbox input { accent-color: #635bff; }
+.sync-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; overflow: hidden; margin: 18px 0; border: 1px solid var(--border); border-radius: 14px; background: var(--border); }
+.sync-summary div { display: grid; gap: 4px; padding: 16px; background: var(--bg-elevated); }
+.sync-summary strong { color: #6ee7b7; font-size: 21px; }
+.sync-summary span { color: var(--muted); font-size: 11px; }
+.sync-plan-list { display: grid; gap: 12px; list-style: none; padding: 0; }
+.sync-plan-list li { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.025); }
+.sync-plan-list h3 { font-size: 15px; }
+.key-name-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.key-name-row code { padding: 3px 7px; border: 1px solid rgba(148,163,184,.2); border-radius: 999px; background: rgba(15,23,42,.45); font-size: 11px; }
 .guide-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .guide-status-grid :is(ul, ol) { display: grid; gap: 10px; padding-left: 20px; color: #c8cddd; font-size: 13px; line-height: 1.5; }
 @media (max-width: 820px) { .guide-hero, .guide-status-grid { grid-template-columns: 1fr; } .guide-steps li { grid-template-columns: 38px 1fr; } .guide-steps a { grid-column: 2; } .migration-summary { grid-template-columns: repeat(3, 1fr); } .phase { grid-template-columns: 1fr; } .phase > span { width: max-content; } }
