@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [codex/studio-foundation, main, master]
   pull_request:
 
 jobs:
@@ -59,3 +59,11 @@ jobs:
 
       - name: Frontend build
         run: npm ci --prefix frontend && npm run build --prefix frontend
+
+  production-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate production Docker image
+        run: docker build --tag operations-studio-ci:latest .
