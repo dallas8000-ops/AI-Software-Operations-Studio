@@ -21,7 +21,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         base = projects_for_user(self.request.user).distinct()
-        if self.action == "list":
+        include_portfolio = (
+            self.request.query_params.get("include_portfolio", "false").lower() == "true"
+        )
+        if self.action == "list" and not include_portfolio:
             return base.exclude(slug__in=DASHBOARD_HIDDEN_PROJECT_SLUGS)
         return base
 

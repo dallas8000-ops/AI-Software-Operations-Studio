@@ -42,7 +42,7 @@ export default function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      const listed = await projectsApi.list();
+      const listed = await projectsApi.list(true);
       setProjects(listed);
       loadPortfolioProjects(listed);
     } catch (err) {

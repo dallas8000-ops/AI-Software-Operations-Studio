@@ -338,7 +338,8 @@ export const authApi = {
 };
 
 export const projectsApi = {
-  list: () => apiFetch<Project[]>("/projects/"),
+  list: (includePortfolio = false) =>
+    apiFetch<Project[]>(`/projects/${includePortfolio ? "?include_portfolio=true" : ""}`),
   create: (body: { name: string; description?: string; git_url?: string; local_path?: string }) =>
     apiFetch<Project>("/projects/", { method: "POST", body: JSON.stringify(body) }),
   get: (slug: string) => apiFetch<Project>(`/projects/${slug}/`),
