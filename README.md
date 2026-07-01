@@ -16,8 +16,8 @@ Secrets are write-only from the browser, encrypted server-side, masked in API re
 |---------|----------|---------|
 | Core application | **85%** | Auth, projects, vault, agency, quality, workflows, transfer, billing framework, diagnostics, and guide are implemented locally. |
 | Data integration | **80%** | Imported project records, run history, and encrypted vault records are present; external mappings still require verification. |
-| Production readiness | **50%** | GitHub publishing is active; the new Railway service, production database, domain, Stripe products, and live webhook verification remain. |
-| Overall | **75%** | Remaining work is primarily external deployment, configuration, and verified go-live evidence. |
+| Production readiness | **75%** | Railway web, PostgreSQL, Redis, generated domain, migrations, and health checks are live; workers, custom domain, Stripe catalog, and webhook verification remain. |
+| Overall | **85%** | Core code and initial infrastructure are operational; remaining work is production completion and commercial validation. |
 
 Green UI indicators mean that available evidence passed. They do **not** prove that Railway, Stripe, DNS, or every external source record has already been changed.
 
@@ -42,6 +42,23 @@ Recommended public layout:
 All three may use one Stripe account. Distinguish them with separate Products and Prices plus application metadata. Use separate least-privilege restricted keys wherever supported and always verify webhook signatures server-side.
 
 ## Completion roadmap
+
+### Live Studio deployment
+
+| Item | Current state |
+|------|---------------|
+| Railway project | `AI-Software-Operations-Studio` |
+| Web service | `operations-studio-web` - deployed successfully |
+| Railway URL | [operations-studio-web-production.up.railway.app](https://operations-studio-web-production.up.railway.app) |
+| Health endpoint | [Live health](https://operations-studio-web-production.up.railway.app/health/) |
+| PostgreSQL | Managed service connected; health passing |
+| Redis | Managed service connected; health passing |
+| Worker | Created and configured; held at zero replicas pending non-HTTP health-check finalization |
+| Beat scheduler | Created and configured; held at zero replicas pending non-HTTP health-check finalization |
+| Studio billing | Disabled until Studio-specific Stripe Products, Prices, and webhook are approved and configured |
+| Custom domain | Not assigned yet; use the generated Railway URL for validation |
+
+The existing Specwright and Deployment-Stripe-center Railway services were not changed during this deployment.
 
 ### Complete locally
 
