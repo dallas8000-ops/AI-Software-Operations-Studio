@@ -229,6 +229,9 @@ export interface MigrationStatus {
     hasProjectId: boolean;
     hasServiceId: boolean;
     ready: boolean;
+    syncApplied?: boolean;
+    lastEnvPushAt?: string | null;
+    lastPushedKeyNames?: string[];
   }>;
   qualityLinks: number;
 }

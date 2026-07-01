@@ -70,6 +70,13 @@ class QualityProjectLinkTests(APITestCase):
         from apps.runs.models import PipelineRun, PipelineRunLog
         from apps.vault.models import ProjectVault, VaultSecret
 
+        self.project.scan_data = {
+            "railway": {
+                "lastEnvPushAt": "2026-07-01T12:00:00+00:00",
+                "lastPushedKeys": ["STRIPE_SECRET_KEY", "DATABASE_URL"],
+            }
+        }
+        self.project.save(update_fields=["scan_data"])
         run = PipelineRun.objects.create(project=self.project, started_by=self.user, status="completed")
         PipelineRunLog.objects.create(run=run, step="verify", status="ok", message="done")
         ProjectVault.objects.create(project=self.project, salt=b"x" * 32)
@@ -90,6 +97,15 @@ class QualityProjectLinkTests(APITestCase):
         self.assertEqual(response.data["railwayReadyProjects"], 1)
         self.assertEqual(response.data["railwayProjects"][0]["slug"], self.project.slug)
         self.assertIn("STRIPE_SECRET_KEY", response.data["railwayProjects"][0]["keyNames"])
+        self.assertTrue(response.data["railwayProjects"][0]["syncApplied"])
+        self.assertEqual(
+            response.data["railwayProjects"][0]["lastEnvPushAt"],
+            "2026-07-01T12:00:00+00:00",
+        )
+        self.assertEqual(
+            response.data["railwayProjects"][0]["lastPushedKeyNames"],
+            ["DATABASE_URL", "STRIPE_SECRET_KEY"],
+        )
         self.assertNotIn("value", response.data["railwayProjects"][0])
 
 

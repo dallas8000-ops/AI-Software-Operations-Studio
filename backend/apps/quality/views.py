@@ -67,6 +67,7 @@ class MigrationStatusView(APIView):
             project_id = "RAILWAY_PROJECT_ID" in keys or bool(railway.get("projectId"))
             service_id = "RAILWAY_SERVICE_ID" in keys or bool(railway.get("serviceId"))
             has_token = "RAILWAY_API_TOKEN" in keys
+            last_pushed_keys = railway.get("lastPushedKeys") or []
             railway_rows.append(
                 {
                     "slug": project.slug,
@@ -76,6 +77,9 @@ class MigrationStatusView(APIView):
                     "hasProjectId": project_id,
                     "hasServiceId": service_id,
                     "ready": has_token and project_id and service_id,
+                    "syncApplied": bool(railway.get("lastEnvPushAt")),
+                    "lastEnvPushAt": railway.get("lastEnvPushAt"),
+                    "lastPushedKeyNames": sorted(last_pushed_keys) if isinstance(last_pushed_keys, list) else [],
                 }
             )
         return Response(

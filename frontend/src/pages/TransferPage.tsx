@@ -28,6 +28,13 @@ function missingKeys(keyNames: string[], expected: readonly string[]) {
   return expected.filter((key) => !keyNames.includes(key));
 }
 
+function formatSyncTime(value?: string | null) {
+  if (!value) return "Not applied yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
 export default function TransferPage() {
   const [providers, setProviders] = useState<TransferProviderStatus[]>([]);
   const [moduleStatus, setModuleStatus] = useState<string>("loading");
@@ -230,6 +237,11 @@ export default function TransferPage() {
             verify key names, and prepare Railway environment delivery per project. It does not push to Railway,
             create Stripe objects, or change webhooks from this screen.
           </p>
+          <div className="alert">
+            <strong>What is migrated vs. what is applied:</strong> project records, run history, and encrypted vault
+            records are already local in Studio. Railway/Stripe settings are only sent outward after a prepared packet
+            is reviewed and the exact confirmation phrase is typed.
+          </div>
           <div className="sync-summary">
             <div>
               <strong>{migration.railwayReadyProjects}/{migration.projects}</strong>
@@ -238,6 +250,10 @@ export default function TransferPage() {
             <div>
               <strong>{migration.stripeReadyProjects}/{migration.projects}</strong>
               <span>Stripe key-pair ready</span>
+            </div>
+            <div>
+              <strong>{migration.railwayProjects.filter((project) => project.syncApplied).length}/{migration.projects}</strong>
+              <span>Railway sync applied</span>
             </div>
             <div>
               <strong>{migration.secrets}</strong>
@@ -260,11 +276,24 @@ export default function TransferPage() {
                       Railway: {project.ready ? "target mapped" : `missing ${missingRailway.join(", ") || "target mapping"}`} · Stripe:{" "}
                       {stripeCoreReady ? "key pair present" : `missing ${missingStripe.filter((key) => key !== "STRIPE_WEBHOOK_SECRET").join(", ") || "key pair"}`}
                     </p>
+                    <p className="muted">
+                      External sync:{" "}
+                      <span className={`badge ${project.syncApplied ? "badge-ok" : "badge-warn"}`}>
+                        {project.syncApplied ? "Applied" : "Not applied"}
+                      </span>{" "}
+                      {formatSyncTime(project.lastEnvPushAt)}
+                    </p>
                     <p className="key-name-row">
                       {keyNames.length
                         ? keyNames.map((key) => <code key={key}>{key}</code>)
                         : <span className="muted">No vault keys imported yet</span>}
                     </p>
+                    {project.lastPushedKeyNames && project.lastPushedKeyNames.length > 0 && (
+                      <p className="key-name-row">
+                        <span className="muted">Last pushed:</span>{" "}
+                        {project.lastPushedKeyNames.map((key) => <code key={key}>{key}</code>)}
+                      </p>
+                    )}
                     {syncPlan && (
                       <div className="sync-confirm">
                         <p className="muted">
