@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import {
   agencyApi,
   orgsApi,
+  projectsApi,
   type AgencyBillingInfo,
   type OrgMember,
   type Organization,
@@ -26,6 +27,8 @@ export default function AgencyPage() {
   const [selectedOrg, setSelectedOrg] = useState<string>("");
   const [githubInstallId, setGithubInstallId] = useState("");
   const [githubAccount, setGithubAccount] = useState("");
+  const [selectedProjectSlugs, setSelectedProjectSlugs] = useState<string[]>([]);
+  const [assignNotice, setAssignNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -197,6 +200,42 @@ export default function AgencyPage() {
       setError(err instanceof Error ? err.message : "Link GitHub failed");
     } finally {
       setBusy("");
+    }
+  }
+
+  function toggleProject(slug: string) {
+    setSelectedProjectSlugs((current) =>
+      current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug]
+    );
+    setAssignNotice("");
+  }
+
+  function selectAllUnassigned() {
+    setSelectedProjectSlugs(unassignedProjects.map((project) => project.slug));
+    setAssignNotice("");
+  }
+
+  async function assignSelectedProjects() {
+    if (!selectedOrg || selectedProjectSlugs.length === 0) return;
+    setBusy("assign-projects");
+    setError("");
+    setAssignNotice("");
+    const failures: string[] = [];
+    for (const slug of selectedProjectSlugs) {
+      try {
+        await projectsApi.update(slug, { organization_slug: selectedOrg });
+      } catch (err) {
+        const project = unassignedProjects.find((item) => item.slug === slug);
+        failures.push(`${project?.name || slug}: ${err instanceof Error ? err.message : "assignment failed"}`);
+      }
+    }
+    setSelectedProjectSlugs([]);
+    await load();
+    setBusy("");
+    if (failures.length) {
+      setError(`Some projects could not be assigned. ${failures.join(" ")}`);
+    } else {
+      setAssignNotice("Selected projects assigned to the organization.");
     }
   }
 
@@ -486,9 +525,41 @@ export default function AgencyPage() {
                 These projects were imported under your account, but they are not attached to an organization yet.
                 Assigning them controls team access and organization billing limits; it does not expose secret values.
               </p>
+              {assignNotice && <div className="alert alert-success">{assignNotice}</div>}
+              <div className="option-row compact">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  disabled={!canAdmin || unassignedProjects.length === 0}
+                  onClick={selectAllUnassigned}
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={!canAdmin || selectedProjectSlugs.length === 0 || busy === "assign-projects"}
+                  onClick={assignSelectedProjects}
+                >
+                  {busy === "assign-projects"
+                    ? "Assigning…"
+                    : `Assign ${selectedProjectSlugs.length || ""} to ${selected?.name || "organization"}`}
+                </button>
+                {!canAdmin && selectedOrg && <span className="muted">Admin or owner role required.</span>}
+                {!selectedOrg && <span className="muted">Create or select an organization first.</span>}
+              </div>
               <ul className="project-grid">
                 {unassignedProjects.map((p) => (
                   <li key={p.id}>
+                    <label className="assignment-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedProjectSlugs.includes(p.slug)}
+                        disabled={!canAdmin || busy === "assign-projects"}
+                        onChange={() => toggleProject(p.slug)}
+                      />
+                      Select for assignment
+                    </label>
                     <Link to={`/projects/${p.slug}/settings`} className="project-card">
                       <strong>{p.name}</strong>
                       <span className="muted">Open settings → Organization</span>
