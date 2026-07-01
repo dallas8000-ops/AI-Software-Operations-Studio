@@ -40,6 +40,8 @@ Do not point the adapter at production until local and staging validation pass. 
 
 Project identity mapping is now in place. Only after local and staging validation should scan triggering be considered, and scan triggering must remain an explicit user action.
 
+Local data migration status and repeatable commands are documented in [DATA-MIGRATION.md](DATA-MIGRATION.md).
+
 ## Prepare for Production preflight
 
 The Workflows page evaluates existing repository analysis, Specwright quality, project configuration, and operational readiness. Deployment reaches the human approval stage only when quality and readiness evidence pass.

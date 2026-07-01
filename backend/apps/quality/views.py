@@ -4,6 +4,9 @@ from rest_framework.views import APIView
 from rest_framework import serializers
 
 from apps.core.access import ProjectOwnedMixin
+from apps.core.access import projects_for_user
+from apps.runs.models import PipelineRun, PipelineRunLog
+from apps.vault.models import ProjectVault, VaultSecret
 
 from .client import SpecwrightUnavailable, fetch_dashboard, fetch_project_health
 from .models import QualityProjectLink
@@ -38,6 +41,34 @@ class QualitySummaryView(APIView):
                     "needsAttention": summary.get("needs_attention", 0),
                 },
                 "projects": dashboard.get("projects", []),
+            }
+        )
+
+
+class MigrationStatusView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        projects = projects_for_user(request.user).distinct()
+        project_ids = list(projects.values_list("id", flat=True))
+        runs = PipelineRun.objects.filter(project_id__in=project_ids)
+        key_rows = VaultSecret.objects.filter(project_id__in=project_ids).values_list("project_id", "key_name")
+        keys_by_project = {}
+        for project_id, key_name in key_rows:
+            keys_by_project.setdefault(project_id, set()).add(key_name)
+        stripe_ready = sum(
+            {"STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"}.issubset(keys)
+            for keys in keys_by_project.values()
+        )
+        return Response(
+            {
+                "projects": projects.count(),
+                "runs": runs.count(),
+                "logs": PipelineRunLog.objects.filter(run__in=runs).count(),
+                "vaults": ProjectVault.objects.filter(project_id__in=project_ids).count(),
+                "secrets": VaultSecret.objects.filter(project_id__in=project_ids).count(),
+                "stripeReadyProjects": stripe_ready,
+                "qualityLinks": QualityProjectLink.objects.filter(project_id__in=project_ids).count(),
             }
         )
 

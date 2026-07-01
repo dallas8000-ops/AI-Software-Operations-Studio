@@ -231,6 +231,10 @@ APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL") or _public_app_url()
 # until a local or staging Specwright API is explicitly connected.
 SPECWRIGHT_API_URL = os.environ.get("SPECWRIGHT_API_URL", "").strip().rstrip("/")
 SPECWRIGHT_API_TIMEOUT_SECONDS = float(os.environ.get("SPECWRIGHT_API_TIMEOUT_SECONDS", "3"))
+_local_specwright_db = REPO_ROOT.parent / "Specwright" / "specwright.db"
+SPECWRIGHT_SQLITE_PATH = os.environ.get("SPECWRIGHT_SQLITE_PATH", "").strip()
+if not SPECWRIGHT_SQLITE_PATH and DEBUG and _local_specwright_db.is_file():
+    SPECWRIGHT_SQLITE_PATH = str(_local_specwright_db)
 
 # License enforcement settings
 LICENSE_ENFORCEMENT_ENABLED = os.environ.get("LICENSE_ENFORCEMENT_ENABLED", "false").lower() == "true"

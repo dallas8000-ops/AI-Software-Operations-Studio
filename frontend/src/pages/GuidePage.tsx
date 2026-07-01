@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { projectsApi, qualityApi, vaultApi, type Project, type QualitySummary } from "../api/client";
+import { projectsApi, qualityApi, vaultApi, type MigrationStatus, type Project, type QualitySummary } from "../api/client";
 
 const steps = [
   { title: "Add your applications", detail: "Register each real application folder or Git repository. The Studio never discovers every folder automatically.", action: "Open Projects", to: "/projects" },
@@ -15,9 +15,8 @@ const steps = [
 
 const remaining = [
   "Connect a running Specwright API to SPECWRIGHT_API_URL.",
-  "Register or import the existing portfolio projects into this Studio database.",
-  "Link every Studio project to its matching Specwright record.",
-  "Add project-specific Stripe and deployment credentials to the encrypted vault.",
+  "Create Specwright records and links for projects that have not yet been scanned there.",
+  "Migrate organizations, memberships, and subscription ownership after account identity review.",
   "Validate products, prices, webhooks, domains, and production URLs per application.",
   "Create separate Studio staging services and database before any production cutover.",
   "Run migration rehearsals, backups, and side-by-side monitoring.",
@@ -28,6 +27,7 @@ export default function GuidePage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [quality, setQuality] = useState<QualitySummary | null>(null);
   const [stripeReady, setStripeReady] = useState(0);
+  const [migration, setMigration] = useState<MigrationStatus | null>(null);
 
   useEffect(() => {
     projectsApi.list().then(async (items) => {
@@ -36,6 +36,7 @@ export default function GuidePage() {
       setStripeReady(vaults.filter((vault) => vault?.keys.includes("STRIPE_SECRET_KEY") && vault.keys.includes("STRIPE_PUBLISHABLE_KEY")).length);
     }).catch(() => setProjects([]));
     qualityApi.summary().then(setQuality).catch(() => setQuality({ connected: false, status: "unavailable" }));
+    qualityApi.migrationStatus().then(setMigration).catch(() => setMigration(null));
   }, []);
 
   const configured = useMemo(() => projects.filter((p) => p.local_path && p.production_url).length, [projects]);
@@ -54,8 +55,12 @@ export default function GuidePage() {
 
       <section className="guide-callout">
         <strong>Why data appears missing</strong>
-        <p>This local Studio uses a new database for safe development. Your existing Stripe customers, products, projects, Railway databases, and production history were not deleted—they remain in their current services and must be connected or migrated deliberately.</p>
+        <p>The safe migration is underway. Project metadata, pipeline history, and encrypted vault records are now in Studio. Stripe customers and products remain in Stripe, while Railway databases and live services remain in place until staged cutover.</p>
       </section>
+
+      {migration && <section className="migration-summary" aria-label="Migrated data summary">
+        <div><strong>{migration.projects}</strong><span>projects</span></div><div><strong>{migration.runs}</strong><span>pipeline runs</span></div><div><strong>{migration.logs}</strong><span>run logs</span></div><div><strong>{migration.secrets}</strong><span>encrypted secrets</span></div><div><strong>{migration.stripeReadyProjects}/{migration.projects}</strong><span>Stripe-key ready</span></div><div><strong>{migration.qualityLinks}</strong><span>quality links</span></div>
+      </section>}
 
       <section aria-labelledby="guide-steps">
         <div className="studio-section-heading"><div><p className="studio-kicker">STEP BY STEP</p><h2 id="guide-steps">From application folder to safe production</h2></div><span className="muted">8 stages</span></div>
@@ -63,7 +68,7 @@ export default function GuidePage() {
       </section>
 
       <section className="guide-status-grid">
-        <article className="card"><p className="studio-kicker">COMPLETE NOW</p><h2>Studio foundation</h2><ul><li>Unified navigation and branding</li><li>Project and quality identity links</li><li>Read-only Specwright score adapter</li><li>Production preflight and approval gates</li><li>Encrypted vault resilience</li><li>153 passing backend tests</li></ul></article>
+        <article className="card"><p className="studio-kicker">COMPLETE NOW</p><h2>Studio foundation + data</h2><ul><li>Unified navigation and branding</li><li>12 project records and settings migrated</li><li>103 runs and 1,618 logs migrated</li><li>88 encrypted secrets migrated and readable</li><li>DBOps and Elite Specwright links</li><li>Production preflight and approval gates</li></ul></article>
         <article className="card"><p className="studio-kicker">LEFT TO COMPLETE</p><h2>Connections and migration</h2><ol>{remaining.map((item) => <li key={item}>{item}</li>)}</ol></article>
       </section>
 

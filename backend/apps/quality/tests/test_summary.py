@@ -1,4 +1,8 @@
 from unittest.mock import patch
+import json
+import sqlite3
+import tempfile
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.test import override_settings
@@ -61,3 +65,44 @@ class QualityProjectLinkTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["score"], 88)
         self.assertEqual(response.data["gaps"]["tests"], 2)
+
+    def test_migration_status_counts_owned_project_data(self):
+        from apps.runs.models import PipelineRun, PipelineRunLog
+        from apps.vault.models import ProjectVault, VaultSecret
+
+        run = PipelineRun.objects.create(project=self.project, started_by=self.user, status="completed")
+        PipelineRunLog.objects.create(run=run, step="verify", status="ok", message="done")
+        ProjectVault.objects.create(project=self.project, salt=b"x" * 32)
+        for key in ("STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"):
+            VaultSecret.objects.create(project=self.project, key_name=key, encrypted_value="x", iv="x", auth_tag="x")
+        response = self.client.get("/api/v1/studio/migration-status/", secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["projects"], 1)
+        self.assertEqual(response.data["runs"], 1)
+        self.assertEqual(response.data["logs"], 1)
+        self.assertEqual(response.data["stripeReadyProjects"], 1)
+
+
+class SpecwrightSqliteFallbackTests(APITestCase):
+    def test_reads_dashboard_and_project_health_without_fastapi(self):
+        from apps.quality.client import fetch_dashboard, fetch_project_health
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "specwright.db"
+            db = sqlite3.connect(path)
+            db.executescript(
+                """
+                CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT, root_path TEXT, framework TEXT,
+                  watch_enabled INTEGER, github_repo TEXT, last_score INTEGER);
+                CREATE TABLE scans (id INTEGER PRIMARY KEY, project_id INTEGER, status TEXT, stats TEXT, created_at TEXT);
+                """
+            )
+            stats = {"score": {"score": 91, "grade": "A", "breakdown": {"documentation_pct": 95, "test_coverage_pct": 87}, "gaps": {}}, "routes_found": 14, "drift": {"drift_detected": False}}
+            db.execute("INSERT INTO projects VALUES (1, 'Example', 'C:/Example', 'auto', 0, 'org/example', 91)")
+            db.execute("INSERT INTO scans VALUES (1, 1, 'completed', ?, '2026-06-30T12:00:00')", (json.dumps(stats),))
+            db.commit(); db.close()
+            with override_settings(SPECWRIGHT_API_URL="", SPECWRIGHT_SQLITE_PATH=str(path)):
+                dashboard = fetch_dashboard()
+                health = fetch_project_health(1)
+            self.assertEqual(dashboard["summary"]["avg_score"], 91)
+            self.assertEqual(health["score"]["score"], 91)

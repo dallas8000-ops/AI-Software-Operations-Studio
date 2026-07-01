@@ -204,12 +204,23 @@ export const qualityApi = {
     }),
   removeLink: (slug: string) => apiFetch<void>(`/projects/${slug}/quality/link/`, { method: "DELETE" }),
   projectHealth: (slug: string) => apiFetch<ProjectQualityHealth>(`/projects/${slug}/quality/health/`),
+  migrationStatus: () => apiFetch<MigrationStatus>("/studio/migration-status/"),
 };
 
 export interface QualityProjectLink {
   linked: boolean;
   specwrightProjectId?: number;
   specwrightProjectName?: string;
+}
+
+export interface MigrationStatus {
+  projects: number;
+  runs: number;
+  logs: number;
+  vaults: number;
+  secrets: number;
+  stripeReadyProjects: number;
+  qualityLinks: number;
 }
 
 export interface ProjectQualityHealth {

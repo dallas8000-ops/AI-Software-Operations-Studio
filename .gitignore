@@ -21,6 +21,7 @@ backend/.env
 .git-secrets/
 backend/clones/
 backend/staticfiles/
+backend/.migration-backups/
 
 # React frontend
 frontend/node_modules/
