@@ -1,4 +1,71 @@
-# Deployment & Stripe Automation Center
+# AI Software Operations Studio
+
+> Current repository: [dallas8000-ops/AI-Software-Operations-Studio](https://github.com/dallas8000-ops/AI-Software-Operations-Studio)
+>
+> Active build branch: `codex/studio-foundation`
+>
+> Local workspace: `C:\Software Projects\AI Software Operations Studio`
+
+AI Software Operations Studio is a protected Django and React workspace for managing software projects, quality evidence, Stripe configuration, and production deployments. It integrates selected capabilities from **Specwright** and **Deployment-Stripe-center** while allowing both source applications to remain independent products.
+
+Secrets are write-only from the browser, encrypted server-side, masked in API responses, and excluded from Git. Production credentials belong in Railway Variables or a protected vault, not source code, frontend code, prompts, or logs.
+
+## Current build status
+
+| Measure | Estimate | Meaning |
+|---------|----------|---------|
+| Core application | **85%** | Auth, projects, vault, agency, quality, workflows, transfer, billing framework, diagnostics, and guide are implemented locally. |
+| Data integration | **80%** | Imported project records, run history, and encrypted vault records are present; external mappings still require verification. |
+| Production readiness | **50%** | GitHub publishing is active; the new Railway service, production database, domain, Stripe products, and live webhook verification remain. |
+| Overall | **75%** | Remaining work is primarily external deployment, configuration, and verified go-live evidence. |
+
+Green UI indicators mean that available evidence passed. They do **not** prove that Railway, Stripe, DNS, or every external source record has already been changed.
+
+## Three independent products
+
+| Product | Role | Independent operation |
+|---------|------|-----------------------|
+| AI Software Operations Studio | Unified operations product and optional subscription offering | New Railway service, database, URL, Stripe catalog, and webhook |
+| Specwright | Quality/review application | May continue operating and selling independently |
+| Deployment-Stripe-center | Deployment and Stripe automation application | May continue operating and selling independently |
+
+Integration does not delete, overwrite, redeploy, or automatically synchronize the two source applications. Keep their services, databases, domains, environment variables, and Stripe webhooks active unless their owner separately approves a retirement.
+
+Recommended public layout:
+
+| Product | Custom domain example | Stripe setup |
+|---------|-----------------------|--------------|
+| Studio | `studio.example.com` | Separate Product, Prices, endpoint, and signing secret |
+| Specwright | `specwright.example.com` | Separate Product, Prices, endpoint, and signing secret |
+| Deployment Center | `deploy.example.com` | Separate Product, Prices, endpoint, and signing secret |
+
+All three may use one Stripe account. Distinguish them with separate Products and Prices plus application metadata. Use separate least-privilege restricted keys wherever supported and always verify webhook signatures server-side.
+
+## Completion roadmap
+
+### Complete locally
+
+- Django and React foundation, authentication, and application navigation.
+- Projects, settings, environments, organizations, roles, and agency assignment.
+- Encrypted project vault with masked, server-side-only secret handling.
+- Imported project metadata, pipeline history, logs, and encrypted vault records.
+- Specwright quality-evidence adapter and workflow/readiness surfaces.
+- Deployment transfer module, provider checks, audit evidence, dry-run planning, and explicit approval gate.
+- Stripe diagnostics, webhook delivery-state reporting, billing framework, and license support.
+- In-app tutorial, phase roadmap, deployment runbook, and GitHub publishing.
+
+### Required before Studio production launch
+
+1. Review and merge `codex/studio-foundation` into the protected default branch.
+2. Create a new Railway service and PostgreSQL database for Studio.
+3. Configure `VAULT_MASTER_KEY`, `DJANGO_SECRET_KEY`, database, allowed-host, CORS, and production variables in Railway.
+4. Deploy and verify `/health/`, authentication, projects, agency, guide, workflows, and transfer using the Railway URL.
+5. Assign the Studio custom domain and update allowed origins after TLS activates.
+6. Create Studio-specific Stripe Products and Prices in test mode first.
+7. Register the Studio webhook and store its signing secret only in Railway.
+8. Complete a test subscription lifecycle and verify webhook signatures, idempotency, cancellation, and access updates.
+9. Back up the production database and vault-key recovery material.
+10. Run the complete test/build/production-check suite and record go-live evidence.
 
 **Encrypted vault + Stripe automation for agencies shipping client apps to production** — one login to scan repos, wire billing, and push deploys without secrets leaving the server.
 
@@ -22,7 +89,9 @@ This repo merges the former **Stripe Installer** and **API Transfer** products i
 
 ---
 
-## Production (Gilliom)
+## Existing deployment reference (not the new Studio launch)
+
+The URLs in this section belong to the earlier automation-center deployment lineage. They are retained as migration evidence and do not prove that this Studio repository has completed its own Railway launch.
 
 | Item | URL |
 |------|-----|
@@ -52,7 +121,9 @@ powershell -File scripts/complete-cutover.ps1
 
 ---
 
-## What this replaces
+## Integrated source capabilities
+
+Studio incorporates capabilities from earlier applications; it does not require those applications to be shut down. Treat the table below as a code-integration map, not a retirement instruction.
 
 | Old app | Was | Now |
 |---------|-----|-----|
@@ -65,7 +136,7 @@ powershell -File scripts/complete-cutover.ps1
 
 ## Status
 
-**Complete** — Django + React product with agency, billing, API transfer, and production tooling.
+**Local feature foundation substantially complete; external production launch remains in progress.**
 
 | Area | Includes |
 |------|----------|
@@ -238,17 +309,19 @@ Current production entry: **`automation-center`** → `https://stripe-installer.
 
 ---
 
-## Cutover (retire api-transfer-production)
+## Parallel launch and optional future cutover
 
-Remaining manual steps — see [docs/MERGE-STATUS.md](docs/MERGE-STATUS.md):
+The current plan is a parallel launch: keep Specwright and Deployment-Stripe-center available while Studio receives its own Railway deployment, database, domain, Stripe catalog, and webhook. Any future retirement is a separate owner-approved operation after backups and production evidence.
 
-1. Finish TLS on custom domain (Railway Networking).
-2. Disable legacy Stripe webhook on `api-transfer-production.../api/billing/webhook`.
-3. Smoke test: login → project → Transfer panel.
-4. Redeploy portfolio (`frontlinedigital-1-production`) for updated demo URL.
-5. After 48h quiet → delete `api-transfer-production` Railway service.
+Studio launch steps:
 
-Helper: `powershell -File scripts/complete-cutover.ps1`
+1. Deploy Studio to its own staging and production services.
+2. Keep the existing application URLs and webhooks enabled.
+3. Give Studio its own Stripe endpoint and webhook signing secret.
+4. Smoke test login, projects, vault, workflows, transfer, and billing.
+5. Add Studio to the public portfolio only after the production evidence passes.
+
+The historical cutover helper is retained for reference only. Do not run it as part of the parallel-launch plan.
 
 ---
 
@@ -384,4 +457,6 @@ The v0.6 CLI and Electron app live in [`legacy/node/`](legacy/node/README.md) fo
 
 ## Repository
 
-GitHub: [dallas8000-ops/Deployment-Stripe-center](https://github.com/dallas8000-ops/Deployment-Stripe-center)
+GitHub: [dallas8000-ops/AI-Software-Operations-Studio](https://github.com/dallas8000-ops/AI-Software-Operations-Studio)
+
+Use pull requests to merge the active build branch into the default branch. Never commit `.env` files, vault master keys, Stripe secrets, webhook signing secrets, Railway tokens, database URLs, or GitHub tokens.

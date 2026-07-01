@@ -1,8 +1,8 @@
 {
-  "name": "deployment-stripe-center",
+  "name": "ai-software-operations-studio",
   "private": true,
   "version": "1.0.0",
-  "description": "Deployment & Stripe Automation Center — Django + React",
+  "description": "AI Software Operations Studio - Django and React operations platform",
   "scripts": {
     "dev": "node scripts/run-dev.mjs",
     "dev:stop": "node scripts/stop-dev.mjs",
