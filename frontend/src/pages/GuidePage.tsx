@@ -55,11 +55,18 @@ export default function GuidePage() {
 
       <section className="guide-callout">
         <strong>Why data appears missing</strong>
-        <p>The safe migration is underway. Project metadata, pipeline history, and encrypted vault records are now in Studio. Stripe customers and products remain in Stripe, while Railway databases and live services remain in place until staged cutover.</p>
+        <p>The local data migration is complete. Project metadata, pipeline history, and encrypted vault records are now in Studio. Secrets are retained for server-side Railway sync but never displayed. Railway databases and live services remain unchanged until their target mappings pass verification.</p>
       </section>
 
       {migration && <section className="migration-summary" aria-label="Migrated data summary">
-        <div><strong>{migration.projects}</strong><span>projects</span></div><div><strong>{migration.runs}</strong><span>pipeline runs</span></div><div><strong>{migration.logs}</strong><span>run logs</span></div><div><strong>{migration.secrets}</strong><span>encrypted secrets</span></div><div><strong>{migration.stripeReadyProjects}/{migration.projects}</strong><span>Stripe-key ready</span></div><div><strong>{migration.qualityLinks}</strong><span>quality links</span></div>
+        <div><strong>{migration.projects}</strong><span>projects</span></div><div><strong>{migration.runs}</strong><span>pipeline runs</span></div><div><strong>{migration.logs}</strong><span>run logs</span></div><div><strong>{migration.secrets}</strong><span>encrypted secrets</span></div><div><strong>{migration.stripeReadyProjects}/{migration.projects}</strong><span>Stripe-key ready</span></div><div><strong>{migration.railwayReadyProjects}/{migration.projects}</strong><span>Railway target ready</span></div><div><strong>{migration.qualityLinks}</strong><span>quality links</span></div>
+      </section>}
+
+      {migration && <section className="card" aria-labelledby="railway-readiness">
+        <div className="studio-section-heading"><div><p className="studio-kicker">SAFE SYNC AUDIT</p><h2 id="railway-readiness">Railway secret delivery readiness</h2></div><span className="muted">No values displayed or sent</span></div>
+        <ul>{migration.railwayProjects.map((project) => <li key={project.slug}>
+          <strong>{project.name}</strong>: {project.ready ? "ready for verified server-side sync" : [!project.hasToken && "token", !project.hasProjectId && "project ID", !project.hasServiceId && "service ID"].filter(Boolean).join(", ") + " mapping required"}
+        </li>)}</ul>
       </section>}
 
       <section aria-labelledby="guide-steps">

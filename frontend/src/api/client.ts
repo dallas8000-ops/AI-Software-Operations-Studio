@@ -220,6 +220,15 @@ export interface MigrationStatus {
   vaults: number;
   secrets: number;
   stripeReadyProjects: number;
+  railwayReadyProjects: number;
+  railwayProjects: Array<{
+    slug: string;
+    name: string;
+    hasToken: boolean;
+    hasProjectId: boolean;
+    hasServiceId: boolean;
+    ready: boolean;
+  }>;
   qualityLinks: number;
 }
 

@@ -73,7 +73,13 @@ class QualityProjectLinkTests(APITestCase):
         run = PipelineRun.objects.create(project=self.project, started_by=self.user, status="completed")
         PipelineRunLog.objects.create(run=run, step="verify", status="ok", message="done")
         ProjectVault.objects.create(project=self.project, salt=b"x" * 32)
-        for key in ("STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"):
+        for key in (
+            "STRIPE_SECRET_KEY",
+            "STRIPE_PUBLISHABLE_KEY",
+            "RAILWAY_API_TOKEN",
+            "RAILWAY_PROJECT_ID",
+            "RAILWAY_SERVICE_ID",
+        ):
             VaultSecret.objects.create(project=self.project, key_name=key, encrypted_value="x", iv="x", auth_tag="x")
         response = self.client.get("/api/v1/studio/migration-status/", secure=True)
         self.assertEqual(response.status_code, 200)
@@ -81,6 +87,9 @@ class QualityProjectLinkTests(APITestCase):
         self.assertEqual(response.data["runs"], 1)
         self.assertEqual(response.data["logs"], 1)
         self.assertEqual(response.data["stripeReadyProjects"], 1)
+        self.assertEqual(response.data["railwayReadyProjects"], 1)
+        self.assertEqual(response.data["railwayProjects"][0]["slug"], self.project.slug)
+        self.assertNotIn("value", response.data["railwayProjects"][0])
 
 
 class SpecwrightSqliteFallbackTests(APITestCase):

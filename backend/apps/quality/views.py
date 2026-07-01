@@ -60,6 +60,23 @@ class MigrationStatusView(APIView):
             {"STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"}.issubset(keys)
             for keys in keys_by_project.values()
         )
+        railway_rows = []
+        for project in projects.order_by("name"):
+            keys = keys_by_project.get(project.id, set())
+            railway = (project.scan_data or {}).get("railway") or {}
+            project_id = "RAILWAY_PROJECT_ID" in keys or bool(railway.get("projectId"))
+            service_id = "RAILWAY_SERVICE_ID" in keys or bool(railway.get("serviceId"))
+            has_token = "RAILWAY_API_TOKEN" in keys
+            railway_rows.append(
+                {
+                    "slug": project.slug,
+                    "name": project.name,
+                    "hasToken": has_token,
+                    "hasProjectId": project_id,
+                    "hasServiceId": service_id,
+                    "ready": has_token and project_id and service_id,
+                }
+            )
         return Response(
             {
                 "projects": projects.count(),
@@ -68,6 +85,8 @@ class MigrationStatusView(APIView):
                 "vaults": ProjectVault.objects.filter(project_id__in=project_ids).count(),
                 "secrets": VaultSecret.objects.filter(project_id__in=project_ids).count(),
                 "stripeReadyProjects": stripe_ready,
+                "railwayReadyProjects": sum(row["ready"] for row in railway_rows),
+                "railwayProjects": railway_rows,
                 "qualityLinks": QualityProjectLink.objects.filter(project_id__in=project_ids).count(),
             }
         )
