@@ -34,6 +34,7 @@ class RootCause(str, Enum):
     WEBHOOK_SECRET_MISSING = "WEBHOOK_SECRET_MISSING"
     WEBHOOK_SECRET_INVALID = "WEBHOOK_SECRET_INVALID"
     DELIVERY_LIKELY_FAILING = "DELIVERY_LIKELY_FAILING"
+    WEBHOOK_INACTIVE = "WEBHOOK_INACTIVE"
     HEALTHY = "HEALTHY"
 
 
@@ -435,6 +436,42 @@ def run_stripe_advisor(project: Project, project_root: Path | None = None) -> di
                     metrics={"failedTests": suite.get("summary", {}).get("failed")},
                 )
             )
+
+    if (
+        not findings
+        and wh_health
+        and wh_health.get("healthy")
+        and (wh_health.get("deliveryEvidence") or {}).get("status") == "inactive"
+    ):
+        findings.append(
+            AdvisorFinding(
+                RootCause.WEBHOOK_INACTIVE,
+                "info",
+                "No recent Stripe webhook activity",
+                (
+                    "Configuration checks did not find a webhook error, but Stripe has no recent events "
+                    "to prove delivery health. Treat this as inactive/unknown, not a high error rate."
+                ),
+                [
+                    PlaybookStep(
+                        1,
+                        "Check endpoint deliveries",
+                        "Open Developers → Webhooks in Stripe and review the endpoint delivery tab when activity starts.",
+                        "stripe_dashboard",
+                        links["webhooks"],
+                    ),
+                    PlaybookStep(
+                        2,
+                        "Trigger a safe test event",
+                        "Use a Stripe test-mode event or a small checkout test, then re-run this advisor.",
+                        "stripe_dashboard",
+                        links["webhooks"],
+                        "A recent delivery appears and is not failing.",
+                    ),
+                ],
+                metrics=wh_health.get("deliveryEvidence") or {},
+            )
+        )
 
     if not findings:
         findings.append(

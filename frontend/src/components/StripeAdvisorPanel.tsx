@@ -90,6 +90,13 @@ export default function StripeAdvisorPanel({ projectSlug }: Props) {
         </div>
       )}
 
+      {report && !report.webhookErrorRisk && report.primaryRootCause === "WEBHOOK_INACTIVE" && (
+        <div className="alert">
+          <strong>No recent Stripe activity</strong> — this is not a high-error signal, but delivery health is not
+          proven yet. Trigger a safe test event, then re-scan.
+        </div>
+      )}
+
       {report && <p className="diagnose-summary">{report.summary}</p>}
 
       {report && report.findings.length > 0 && (

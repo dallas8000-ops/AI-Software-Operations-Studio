@@ -1529,6 +1529,13 @@ export interface WebhookHealthResult {
   expectedWebhookUrl: string | null;
   endpoints: { id: string; url: string; status: string; matchesExpected: boolean | null }[];
   recentEventTypes: Record<string, number>;
+  recentStripeEventCount?: number | null;
+  deliveryEvidence?: {
+    status: "inactive" | "activity_seen" | "unknown" | string;
+    level: "info" | "unknown" | "warning" | "error" | string;
+    recentStripeEventCount: number | null;
+    message: string;
+  };
   issues: { severity: string; message: string; fix: string }[];
   healthy: boolean;
 };

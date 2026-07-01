@@ -159,12 +159,19 @@ export default function MonitoringPanel({ projectSlug, lastDrift, onResynced }: 
         <div className="copilot-result">
           <h3>
             Webhook health
-            {webhook.healthy ? (
+            {webhook.healthy && webhook.deliveryEvidence?.status !== "inactive" ? (
               <span className="badge badge-ok">Healthy</span>
             ) : (
-              <span className="badge badge-warn">Issues found</span>
+              <span className="badge badge-warn">
+                {webhook.deliveryEvidence?.status === "inactive" ? "No recent activity" : "Issues found"}
+              </span>
             )}
           </h3>
+          {webhook.deliveryEvidence && (
+            <div className="alert">
+              <strong>Delivery evidence:</strong> {webhook.deliveryEvidence.message}
+            </div>
+          )}
           {webhook.expectedWebhookUrl && (
             <p className="muted">
               Expected URL: <code>{webhook.expectedWebhookUrl}</code>

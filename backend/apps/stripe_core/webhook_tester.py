@@ -227,8 +227,12 @@ def _test_webhook_event_delivery(project: Project) -> WebhookTestResult:
             return WebhookTestResult(
                 test_type="event_delivery",
                 success=True,
-                message="No recent events (normal for new accounts)",
-                details={"eventCount": 0},
+                message="No recent Stripe events yet; delivery error rate is unproven, not failing.",
+                details={
+                    "eventCount": 0,
+                    "deliveryEvidence": "inactive",
+                    "note": "Quiet accounts can be configured correctly without proving recent webhook delivery.",
+                },
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 duration_ms=(time.time() - start) * 1000,
             )

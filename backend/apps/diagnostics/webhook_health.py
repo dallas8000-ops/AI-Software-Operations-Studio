@@ -32,12 +32,39 @@ def webhook_health(project: Project) -> dict[str, Any]:
         endpoint_rows.append(row)
 
     recent_types: dict[str, int] = {}
+    recent_event_count: int | None = 0
+    delivery_evidence: dict[str, Any] = {
+        "status": "inactive",
+        "level": "unknown",
+        "recentStripeEventCount": 0,
+        "message": (
+            "No recent Stripe events found. That is normal for a quiet account, "
+            "but it does not prove webhook deliveries are succeeding."
+        ),
+    }
     try:
         events = stripe.Event.list(limit=25)
         for ev in events.data:
             recent_types[ev.type] = recent_types.get(ev.type, 0) + 1
-    except stripe.StripeError:
-        events = None
+        recent_event_count = len(events.data)
+        if recent_event_count > 0:
+            delivery_evidence = {
+                "status": "activity_seen",
+                "level": "info",
+                "recentStripeEventCount": recent_event_count,
+                "message": (
+                    "Recent Stripe account events exist. Confirm endpoint deliveries in "
+                    "Stripe Dashboard before treating delivery error rate as healthy."
+                ),
+            }
+    except Exception:
+        recent_event_count = None
+        delivery_evidence = {
+            "status": "unknown",
+            "level": "unknown",
+            "recentStripeEventCount": None,
+            "message": "Could not read recent Stripe events, so delivery activity is unknown.",
+        }
 
     issues = []
     if expected and not any(r.get("matchesExpected") for r in endpoint_rows):
@@ -62,6 +89,8 @@ def webhook_health(project: Project) -> dict[str, Any]:
         "expectedWebhookUrl": expected,
         "endpoints": endpoint_rows,
         "recentEventTypes": recent_types,
+        "recentStripeEventCount": recent_event_count,
+        "deliveryEvidence": delivery_evidence,
         "issues": issues,
         "healthy": len(issues) == 0,
     }
