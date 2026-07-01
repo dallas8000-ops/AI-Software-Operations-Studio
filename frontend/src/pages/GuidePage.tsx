@@ -14,14 +14,62 @@ const steps = [
 ] as const;
 
 const remaining = [
-  "Connect a running Specwright API to SPECWRIGHT_API_URL.",
+  "Confirm any remaining Specwright project links that were not present in the imported source data.",
   "Create Specwright records and links for projects that have not yet been scanned there.",
-  "Migrate organizations, memberships, and subscription ownership after account identity review.",
+  "Assign migrated projects to the correct agency organization after you choose the ownership model.",
   "Validate products, prices, webhooks, domains, and production URLs per application.",
   "Create separate Studio staging services and database before any production cutover.",
   "Run migration rehearsals, backups, and side-by-side monitoring.",
   "Cut over gradually; archive old services only after verification.",
 ] as const;
+
+type PhaseState = "done" | "ready" | "approval" | "remaining";
+
+function phaseRoadmap(migration: MigrationStatus | null, projects: Project[], quality: QualitySummary | null) {
+  const migratedProjects = migration?.projects ?? projects.length;
+  const railwayReady = migration ? migration.railwayReadyProjects === migration.projects && migration.projects > 0 : false;
+  const stripeReady = migration ? migration.stripeReadyProjects > 0 : false;
+  const qualityLinked = Boolean((migration?.qualityLinks ?? 0) > 0 || quality?.connected);
+
+  return [
+    {
+      title: "Phase 1 — Studio foundation",
+      state: "done" as PhaseState,
+      detail: "Unified navigation, local root serving, auth, project workspaces, vault, quality, workflow, deploy, agency, and billing surfaces are in place.",
+    },
+    {
+      title: "Phase 2 — Local data migration",
+      state: migratedProjects > 0 ? "done" as PhaseState : "remaining" as PhaseState,
+      detail: `${migratedProjects} projects, ${migration?.runs ?? 0} runs, ${migration?.logs ?? 0} logs, ${migration?.vaults ?? 0} vaults, and ${migration?.secrets ?? 0} encrypted secret records are present for your real account.`,
+    },
+    {
+      title: "Phase 3 — Secret protection and target mapping",
+      state: railwayReady ? "ready" as PhaseState : "remaining" as PhaseState,
+      detail: railwayReady
+        ? "Railway tokens/project IDs/service IDs are mapped locally without exposing values. The app is ready for an approval-controlled server-side sync."
+        : "Some Railway token, project ID, or service ID mappings still need to be verified before any server-side sync.",
+    },
+    {
+      title: "Phase 4 — Stripe setup per client app",
+      state: stripeReady ? "ready" as PhaseState : "remaining" as PhaseState,
+      detail: stripeReady
+        ? `${migration?.stripeReadyProjects ?? 0} projects have Stripe key pairs in the encrypted vault. Billing setup still runs per project, not from the Studio billing page.`
+        : "Add or import each client app's Stripe keys into its own vault, then run Verify keys before creating products, prices, or webhooks.",
+    },
+    {
+      title: "Phase 5 — Quality and workflow evidence",
+      state: qualityLinked ? "ready" as PhaseState : "remaining" as PhaseState,
+      detail: qualityLinked
+        ? `${migration?.qualityLinks ?? 0} project links are connected to Specwright/fallback quality data. Continue linking projects that need scan history.`
+        : "Link projects to Specwright and run quality scans before treating readiness scores as production evidence.",
+    },
+    {
+      title: "Phase 6 — Agency, production, and cutover",
+      state: "approval" as PhaseState,
+      detail: "Organization assignment, Railway env sync, Stripe dashboard changes, live domains, production database moves, and old-service archival remain approval-controlled steps.",
+    },
+  ];
+}
 
 export default function GuidePage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -40,6 +88,7 @@ export default function GuidePage() {
   }, []);
 
   const configured = useMemo(() => projects.filter((p) => p.local_path && p.production_url).length, [projects]);
+  const phases = useMemo(() => phaseRoadmap(migration, projects, quality), [migration, projects, quality]);
 
   return (
     <div className="guide-page">
@@ -69,13 +118,28 @@ export default function GuidePage() {
         </li>)}</ul>
       </section>}
 
+      <section className="card" aria-labelledby="phase-roadmap">
+        <div className="studio-section-heading"><div><p className="studio-kicker">PHASE ROADMAP</p><h2 id="phase-roadmap">What is complete and what still needs approval</h2></div><span className="muted">Live local status</span></div>
+        <ol className="phase-roadmap">
+          {phases.map((phase) => (
+            <li key={phase.title} className={`phase phase-${phase.state}`}>
+              <div>
+                <h3>{phase.title}</h3>
+                <p>{phase.detail}</p>
+              </div>
+              <span>{phase.state === "done" ? "Done" : phase.state === "ready" ? "Ready" : phase.state === "approval" ? "Approval required" : "Remaining"}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       <section aria-labelledby="guide-steps">
         <div className="studio-section-heading"><div><p className="studio-kicker">STEP BY STEP</p><h2 id="guide-steps">From application folder to safe production</h2></div><span className="muted">8 stages</span></div>
         <ol className="guide-steps">{steps.map((step, index) => <li key={step.title}><span>{index + 1}</span><div><h3>{step.title}</h3><p>{step.detail}</p></div><Link to={step.to}>{step.action} →</Link></li>)}</ol>
       </section>
 
       <section className="guide-status-grid">
-        <article className="card"><p className="studio-kicker">COMPLETE NOW</p><h2>Studio foundation + data</h2><ul><li>Unified navigation and branding</li><li>12 project records and settings migrated</li><li>103 runs and 1,618 logs migrated</li><li>88 encrypted secrets migrated and readable</li><li>DBOps and Elite Specwright links</li><li>Production preflight and approval gates</li></ul></article>
+        <article className="card"><p className="studio-kicker">COMPLETE NOW</p><h2>Studio foundation + data</h2><ul><li>Unified navigation and branding</li><li>{migration?.projects ?? 12} project records and settings migrated</li><li>{migration?.runs ?? 103} runs and {migration?.logs ?? 1618} logs migrated</li><li>{migration?.secrets ?? 90} encrypted secret records retained without displaying values</li><li>{migration?.qualityLinks ?? 2} Specwright/quality project links</li><li>Production preflight and approval gates</li></ul></article>
         <article className="card"><p className="studio-kicker">LEFT TO COMPLETE</p><h2>Connections and migration</h2><ol>{remaining.map((item) => <li key={item}>{item}</li>)}</ol></article>
       </section>
 

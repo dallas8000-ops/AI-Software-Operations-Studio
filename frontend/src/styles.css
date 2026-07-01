@@ -2479,7 +2479,16 @@ input::placeholder {
 .guide-steps h3 { font-size: 16px; }
 .guide-steps p { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .guide-steps a { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.phase-roadmap { display: grid; gap: 12px; list-style: none; margin: 18px 0 0; padding: 0; }
+.phase { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.025); }
+.phase h3 { font-size: 15px; }
+.phase p { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.phase > span { padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.phase-done > span { color: #6ee7b7; background: rgba(52,211,153,.12); }
+.phase-ready > span { color: #93c5fd; background: rgba(59,130,246,.14); }
+.phase-approval > span { color: #fbbf24; background: rgba(245,158,11,.14); }
+.phase-remaining > span { color: #fca5a5; background: rgba(248,113,113,.12); }
 .guide-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .guide-status-grid :is(ul, ol) { display: grid; gap: 10px; padding-left: 20px; color: #c8cddd; font-size: 13px; line-height: 1.5; }
-@media (max-width: 820px) { .guide-hero, .guide-status-grid { grid-template-columns: 1fr; } .guide-steps li { grid-template-columns: 38px 1fr; } .guide-steps a { grid-column: 2; } .migration-summary { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 820px) { .guide-hero, .guide-status-grid { grid-template-columns: 1fr; } .guide-steps li { grid-template-columns: 38px 1fr; } .guide-steps a { grid-column: 2; } .migration-summary { grid-template-columns: repeat(3, 1fr); } .phase { grid-template-columns: 1fr; } .phase > span { width: max-content; } }
 @media (max-width: 520px) { .guide-hero { padding: 28px 22px; } .guide-snapshot { grid-template-columns: 1fr; } }

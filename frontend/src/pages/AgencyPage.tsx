@@ -201,6 +201,7 @@ export default function AgencyPage() {
   }
 
   const orgProjects = dashboard?.projects.filter((p) => p.organization_slug === selectedOrg) || [];
+  const unassignedProjects = dashboard?.projects.filter((p) => !p.organization_slug) || [];
   const orgBilling = billing?.organizations.find((o) => o.slug === selectedOrg);
   const showUpgradeBanner =
     billing?.saasConfigured &&
@@ -471,6 +472,32 @@ export default function AgencyPage() {
               </ul>
             )}
           </section>
+
+          {unassignedProjects.length > 0 && (
+            <section className="card">
+              <div className="studio-section-heading">
+                <div>
+                  <p className="studio-kicker">MIGRATED BUT NOT ASSIGNED</p>
+                  <h2>{unassignedProjects.length} projects waiting for agency ownership</h2>
+                </div>
+                <span className="muted">Data is present</span>
+              </div>
+              <p className="muted">
+                These projects were imported under your account, but they are not attached to an organization yet.
+                Assigning them controls team access and organization billing limits; it does not expose secret values.
+              </p>
+              <ul className="project-grid">
+                {unassignedProjects.map((p) => (
+                  <li key={p.id}>
+                    <Link to={`/projects/${p.slug}/settings`} className="project-card">
+                      <strong>{p.name}</strong>
+                      <span className="muted">Open settings → Organization</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
       </>
     </div>
   );
