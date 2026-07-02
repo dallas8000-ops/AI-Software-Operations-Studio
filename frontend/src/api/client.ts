@@ -158,6 +158,7 @@ export interface Project {
   language: string;
   scan_data: Record<string, unknown>;
   last_scanned_at: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
   latest_readiness_score?: number | null;
@@ -342,8 +343,13 @@ export const authApi = {
 };
 
 export const projectsApi = {
-  list: (includePortfolio = false) =>
-    apiFetch<Project[]>(`/projects/${includePortfolio ? "?include_portfolio=true" : ""}`),
+  list: (includePortfolio = false, includeArchived = false) => {
+    const params = new URLSearchParams();
+    if (includePortfolio) params.set("include_portfolio", "true");
+    if (includeArchived) params.set("include_archived", "true");
+    const query = params.toString();
+    return apiFetch<Project[]>(`/projects/${query ? `?${query}` : ""}`);
+  },
   create: (body: { name: string; description?: string; git_url?: string; local_path?: string }) =>
     apiFetch<Project>("/projects/", { method: "POST", body: JSON.stringify(body) }),
   get: (slug: string) => apiFetch<Project>(`/projects/${slug}/`),
@@ -405,6 +411,10 @@ export const projectsApi = {
     apiFetch<void>(`/projects/${slug}/api-keys/${keyId}/`, { method: "DELETE" }),
   remove: (slug: string) =>
     apiFetch<void>(`/projects/${slug}/`, { method: "DELETE" }),
+  archive: (slug: string) =>
+    apiFetch<Project>(`/projects/${slug}/archive/`, { method: "POST", body: "{}" }),
+  restore: (slug: string) =>
+    apiFetch<Project>(`/projects/${slug}/restore/`, { method: "POST", body: "{}" }),
 };
 
 export interface Organization {

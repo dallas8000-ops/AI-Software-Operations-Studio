@@ -14,20 +14,38 @@ export default function DashboardPage() {
   const [localPath, setLocalPath] = useState("");
   const [gitUrl, setGitUrl] = useState("");
   const [creating, setCreating] = useState(false);
+  const [projectAction, setProjectAction] = useState("");
+  const [query, setQuery] = useState("");
+  const [projectFilter, setProjectFilter] = useState("active");
   const [wizardDismissed, setWizardDismissed] = useState(
     () => localStorage.getItem("wizard-dismissed") === "true"
   );
 
   const visibleProjects = useMemo(() => filterVisibleProjects(projects), [projects]);
+  const activeProjects = useMemo(() => visibleProjects.filter((project) => !project.archived_at), [visibleProjects]);
+  const filteredProjects = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return visibleProjects.filter((project) => {
+      const matchesQuery = !needle || [project.name, project.slug, project.framework, project.language]
+        .some((value) => value.toLowerCase().includes(needle));
+      if (!matchesQuery) return false;
+      if (projectFilter === "archived") return Boolean(project.archived_at);
+      if (project.archived_at) return false;
+      if (projectFilter === "running") return project.last_run_status === "running";
+      if (projectFilter === "ready") return (project.latest_readiness_score ?? 0) >= 90;
+      if (projectFilter === "attention") return (project.latest_readiness_score ?? 0) < 90;
+      return true;
+    });
+  }, [visibleProjects, query, projectFilter]);
 
   const stats = useMemo(() => {
-    const scores = visibleProjects
+    const scores = activeProjects
       .map((p) => p.latest_readiness_score)
       .filter((s): s is number => typeof s === "number");
     const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-    const running = visibleProjects.filter((p) => p.last_run_status === "running").length;
-    return { avg, running, total: visibleProjects.length + 1 };
-  }, [visibleProjects]);
+    const running = activeProjects.filter((p) => p.last_run_status === "running").length;
+    return { avg, running, total: activeProjects.length + 1 };
+  }, [activeProjects]);
 
   function loadPortfolioProjects(listed: Project[]) {
     const projectsBySlug = new Map(listed.map((project) => [project.slug, project]));
@@ -42,7 +60,7 @@ export default function DashboardPage() {
   async function load() {
     setLoading(true);
     try {
-      const listed = await projectsApi.list(true);
+      const listed = await projectsApi.list(true, true);
       setProjects(listed);
       loadPortfolioProjects(listed);
     } catch (err) {
@@ -86,6 +104,20 @@ export default function DashboardPage() {
   function handleWizardComplete() {
     localStorage.setItem("wizard-dismissed", "true");
     setWizardDismissed(true);
+  }
+
+  async function setArchived(project: Project, archived: boolean) {
+    setProjectAction(project.slug);
+    setError("");
+    try {
+      if (archived) await projectsApi.archive(project.slug);
+      else await projectsApi.restore(project.slug);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Project update failed");
+    } finally {
+      setProjectAction("");
+    }
   }
 
   return (
@@ -197,7 +229,31 @@ export default function DashboardPage() {
       </section>
 
       <section className="card">
-        <h2>Your projects</h2>
+        <div className="card-header-row">
+          <div>
+            <h2>Your projects</h2>
+            <p className="muted">Search, triage, and safely archive workspaces without deleting their history.</p>
+          </div>
+          <div className="project-toolbar">
+            <input
+              aria-label="Search projects"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search projects"
+            />
+            <select
+              aria-label="Filter projects"
+              value={projectFilter}
+              onChange={(event) => setProjectFilter(event.target.value)}
+            >
+              <option value="active">Active</option>
+              <option value="ready">Ready (90+)</option>
+              <option value="attention">Needs attention</option>
+              <option value="running">Running</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+        </div>
         {loading ? (
           <p className="muted">Loading…</p>
         ) : (
@@ -227,7 +283,7 @@ export default function DashboardPage() {
                 </a>
               </div>
             </li>
-            {visibleProjects.map((p) => (
+            {filteredProjects.map((p) => (
               <li key={p.id}>
                 <div className="project-card">
                   <Link to={`/projects/${p.slug}`} className="project-card-link">
@@ -246,9 +302,23 @@ export default function DashboardPage() {
                   <Link to={`/projects/${p.slug}/settings`} className="project-card-settings">
                     Edit settings
                   </Link>
+                  <button
+                    type="button"
+                    className="project-card-settings project-archive-action"
+                    disabled={projectAction === p.slug}
+                    onClick={() => setArchived(p, !p.archived_at)}
+                  >
+                    {projectAction === p.slug ? "Saving…" : p.archived_at ? "Restore" : "Archive"}
+                  </button>
                 </div>
               </li>
             ))}
+            {filteredProjects.length === 0 && (
+              <li className="empty-state">
+                <p className="empty-state-title">No matching projects</p>
+                <p className="muted">Try a different search or project status.</p>
+              </li>
+            )}
           </ul>
         )}
       </section>

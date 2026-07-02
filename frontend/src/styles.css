@@ -2480,6 +2480,35 @@ input::placeholder {
 .guide-steps p { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .guide-steps a { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .phase-roadmap { display: grid; gap: 12px; list-style: none; margin: 18px 0 0; padding: 0; }
+
+.project-toolbar {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.project-toolbar input,
+.project-toolbar select {
+  min-width: 175px;
+  width: auto;
+}
+
+.project-archive-action {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  margin-left: 0.75rem;
+}
+
+.project-archive-action:disabled { cursor: wait; opacity: 0.65; }
+
+@media (max-width: 720px) {
+  .project-toolbar,
+  .project-toolbar input,
+  .project-toolbar select { width: 100%; }
+  .card-header-row { align-items: stretch; flex-direction: column; }
+}
 .phase { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.025); }
 .phase h3 { font-size: 15px; }
 .phase p { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.6; }

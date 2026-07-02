@@ -30,6 +30,7 @@ class Project(models.Model):
     language = models.CharField(max_length=32, default="unknown")
     scan_data = models.JSONField(default=dict, blank=True)
     last_scanned_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

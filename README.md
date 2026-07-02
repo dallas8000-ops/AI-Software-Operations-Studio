@@ -156,7 +156,18 @@ Studio incorporates capabilities from earlier applications; it does not require 
 
 ## Status
 
-**Version 1 is live in production. Future roadmap items are enhancements, not launch blockers.**
+**Version 1.1 is the current production release.** Version 1 established the secure deployment, billing, and
+project-operations foundation. Version 1.1 adds portfolio-scale usability while preserving that safety model.
+
+### Version 1.1 additions
+
+- Search projects by name, slug, framework, or language.
+- Filter active projects by readiness or running status.
+- Archive and restore projects without deleting history, vault metadata, runs, or audit evidence.
+- Record archive and restore operations in each project audit log.
+- Mobile-friendly project management controls.
+- Existing guarded Railway sync, Stripe webhook health, backup/recovery, onboarding, MFA, and audit tooling are
+  retained as the Version 1.1 operations baseline.
 
 | Area | Includes |
 |------|----------|

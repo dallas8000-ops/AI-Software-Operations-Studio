@@ -21,12 +21,39 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         base = projects_for_user(self.request.user).distinct()
+        include_archived = (
+            self.request.query_params.get("include_archived", "false").lower() == "true"
+        )
+        if self.action == "list" and not include_archived:
+            base = base.filter(archived_at__isnull=True)
         include_portfolio = (
             self.request.query_params.get("include_portfolio", "false").lower() == "true"
         )
         if self.action == "list" and not include_portfolio:
             return base.exclude(slug__in=DASHBOARD_HIDDEN_PROJECT_SLUGS)
         return base
+
+    @action(detail=True, methods=["post"])
+    def archive(self, request, slug=None):
+        project = self.get_object()
+        if project.archived_at is None:
+            project.archived_at = timezone.now()
+            project.save(update_fields=["archived_at", "updated_at"])
+            from apps.projects.audit import log_audit
+
+            log_audit(project, "project.archived", actor=request.user)
+        return Response(self.get_serializer(project).data)
+
+    @action(detail=True, methods=["post"])
+    def restore(self, request, slug=None):
+        project = self.get_object()
+        if project.archived_at is not None:
+            project.archived_at = None
+            project.save(update_fields=["archived_at", "updated_at"])
+            from apps.projects.audit import log_audit
+
+            log_audit(project, "project.restored", actor=request.user)
+        return Response(self.get_serializer(project).data)
 
     def list(self, request, *args, **kwargs):
         from apps.stripe_core.portfolio_workspace import reconcile_hub_workspace
