@@ -16,6 +16,17 @@ from apps.billing.models import BillingWebhookEvent, OrgSubscription, Subscripti
 logger = logging.getLogger(__name__)
 
 
+def _current_period_end(stripe_sub: dict) -> int | None:
+    """Read the billing period end across Stripe API-version shapes."""
+    period_end = stripe_sub.get("current_period_end")
+    if period_end:
+        return int(period_end)
+
+    items = (stripe_sub.get("items") or {}).get("data") or []
+    item_period_ends = [item.get("current_period_end") for item in items if item.get("current_period_end")]
+    return max(map(int, item_period_ends)) if item_period_ends else None
+
+
 def _get_stripe():
     stripe.api_key = settings.SAAS_STRIPE_SECRET_KEY
     stripe.api_version = settings.STRIPE_API_VERSION
@@ -44,7 +55,7 @@ def _sync_org_subscription(org_id: str, stripe_sub: dict) -> None:
         sub.stripe_price_id = price.get("id", "") or sub.stripe_price_id
         sub.tier = (price.get("metadata") or {}).get("tier") or price.get("nickname") or sub.tier
 
-    period_end = stripe_sub.get("current_period_end")
+    period_end = _current_period_end(stripe_sub)
     if period_end:
         from datetime import datetime, timezone
 
@@ -75,7 +86,7 @@ def _sync_subscription(user_id: str, stripe_sub: dict) -> None:
         sub.stripe_price_id = price.get("id", "") or sub.stripe_price_id
         sub.tier = (price.get("metadata") or {}).get("tier") or price.get("nickname") or sub.tier
 
-    period_end = stripe_sub.get("current_period_end")
+    period_end = _current_period_end(stripe_sub)
     if period_end:
         from datetime import datetime, timezone
 

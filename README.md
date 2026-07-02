@@ -14,10 +14,10 @@ Secrets are write-only from the browser, encrypted server-side, masked in API re
 
 | Measure | Estimate | Meaning |
 |---------|----------|---------|
-| Core application | **85%** | Auth, projects, vault, agency, quality, workflows, transfer, billing framework, diagnostics, and guide are implemented locally. |
-| Data integration | **80%** | Imported project records, run history, and encrypted vault records are present; external mappings still require verification. |
+| Version 1 launch scope | **100%** | Auth, projects, vault, agency, quality, workflows, transfer, billing, diagnostics, guide, deployment, and customer self-service are live. |
+| Migrated Studio data | **100%** | Project records, run history, settings, and encrypted vault records required for launch are present in production. Optional per-client external mappings remain ongoing operations. |
 | Production readiness | **100%** | Railway, custom-domain TLS, data, workers, restricted Stripe key, billing, signed webhook, migrations, health checks, and a controlled live Starter purchase are verified. |
-| Overall | **98%** | Production launch criteria and the live commercial transaction path are verified; the remaining scope is planned product enhancement rather than launch blocking work. |
+| Version 1 release | **100%** | Production launch, live commercial transaction, customer portal, cancellation webhook, custom domain, workers, and public portfolio listing are verified. |
 
 Green UI indicators mean that available evidence passed. They do **not** prove that Railway, Stripe, DNS, or every external source record has already been changed.
 
@@ -156,7 +156,7 @@ Studio incorporates capabilities from earlier applications; it does not require 
 
 ## Status
 
-**Local feature foundation substantially complete; external production launch remains in progress.**
+**Version 1 is live in production. Future roadmap items are enhancements, not launch blockers.**
 
 | Area | Includes |
 |------|----------|

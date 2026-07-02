@@ -231,7 +231,7 @@ SAAS_BILLING_RETURN_URL=http://127.0.0.1:5173`}</pre>
               <strong>{subscription.tier || "—"}</strong>
             </div>
             <div>
-              <span className="muted">Renews</span>
+              <span className="muted">{subscription.cancelAtPeriodEnd ? "Ends" : "Renews"}</span>
               <strong>
                 {subscription.currentPeriodEnd
                   ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
@@ -239,6 +239,11 @@ SAAS_BILLING_RETURN_URL=http://127.0.0.1:5173`}</pre>
               </strong>
             </div>
           </div>
+          {subscription.cancelAtPeriodEnd && (
+            <p className="notice warning" style={{ marginTop: 16 }}>
+              Cancellation scheduled. Access remains active through the end of the paid billing period.
+            </p>
+          )}
           {subscription.customerId && (
             <button
               type="button"
@@ -288,7 +293,20 @@ SAAS_BILLING_RETURN_URL=http://127.0.0.1:5173`}</pre>
                 <span className="muted">Plan</span>
                 <strong>{orgSubscription.tier || "—"}</strong>
               </div>
+              <div>
+                <span className="muted">{orgSubscription.cancelAtPeriodEnd ? "Ends" : "Renews"}</span>
+                <strong>
+                  {orgSubscription.currentPeriodEnd
+                    ? new Date(orgSubscription.currentPeriodEnd).toLocaleDateString()
+                    : "—"}
+                </strong>
+              </div>
             </div>
+          )}
+          {orgSubscription?.cancelAtPeriodEnd && (
+            <p className="notice warning" style={{ marginTop: 16 }}>
+              Organization cancellation is scheduled for the end of its paid billing period.
+            </p>
           )}
           {orgSubscription?.customerId && (
             <button

@@ -2,8 +2,14 @@ import hashlib
 import hmac
 import json
 import time
+from datetime import datetime, timezone
 
 from django.test import Client, TestCase, override_settings
+
+from django.contrib.auth import get_user_model
+
+from apps.billing.models import Subscription
+from apps.billing.webhooks import _sync_subscription
 
 
 @override_settings(
@@ -46,3 +52,32 @@ class BillingWebhookDeliveryTests(TestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn(b"received", response.content)
+
+    def test_subscription_update_reads_item_period_end_and_cancellation(self):
+        user = get_user_model().objects.create_user(
+            email="cancel-state@example.com",
+            password="test-pass-123",
+        )
+        period_end = 1785643200
+
+        _sync_subscription(
+            str(user.pk),
+            {
+                "id": "sub_cancel_test",
+                "customer": "cus_cancel_test",
+                "status": "active",
+                "cancel_at_period_end": True,
+                "items": {
+                    "data": [
+                        {
+                            "current_period_end": period_end,
+                            "price": {"id": "price_starter", "metadata": {"tier": "Starter"}},
+                        }
+                    ]
+                },
+            },
+        )
+
+        subscription = Subscription.objects.get(user=user)
+        self.assertTrue(subscription.cancel_at_period_end)
+        self.assertEqual(subscription.current_period_end, datetime.fromtimestamp(period_end, tz=timezone.utc))
