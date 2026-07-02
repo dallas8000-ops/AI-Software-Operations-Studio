@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { projectsApi, type Project } from "../api/client";
-import { filterVisibleProjects, PORTFOLIO_DEMOS } from "../config/portfolio";
+import { filterVisibleProjects, PLATFORM_PROJECT, PORTFOLIO_DEMOS } from "../config/portfolio";
 import ScoreRing from "../components/ScoreRing";
 import WelcomeWizard from "../components/WelcomeWizard";
 
@@ -26,7 +26,7 @@ export default function DashboardPage() {
       .filter((s): s is number => typeof s === "number");
     const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
     const running = visibleProjects.filter((p) => p.last_run_status === "running").length;
-    return { avg, running, total: visibleProjects.length };
+    return { avg, running, total: visibleProjects.length + 1 };
   }, [visibleProjects]);
 
   function loadPortfolioProjects(listed: Project[]) {
@@ -200,13 +200,33 @@ export default function DashboardPage() {
         <h2>Your projects</h2>
         {loading ? (
           <p className="muted">Loading…</p>
-        ) : visibleProjects.length === 0 ? (
-          <div className="empty-state">
-            <p className="empty-state-title">No projects yet</p>
-            <p className="muted">Create a project above with your real local path, then unlock the vault and run the pipeline.</p>
-          </div>
         ) : (
           <ul className="project-grid">
+            <li>
+              <div className="project-card">
+                <a href={PLATFORM_PROJECT.productionUrl} className="project-card-link">
+                  <div className="project-card-top">
+                    <strong>{PLATFORM_PROJECT.name}</strong>
+                    <ScoreRing score={PLATFORM_PROJECT.readinessScore} size={48} />
+                  </div>
+                  <div className="project-card-meta">
+                    <span className="pill">platform</span>
+                    <span className="run-pill run-completed">live</span>
+                  </div>
+                  <p className="muted" style={{ margin: "0.6rem 0 0", fontSize: "0.85rem" }}>
+                    {PLATFORM_PROJECT.note}
+                  </p>
+                </a>
+                <a
+                  href={PLATFORM_PROJECT.repositoryUrl}
+                  className="project-card-settings"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View GitHub repository
+                </a>
+              </div>
+            </li>
             {visibleProjects.map((p) => (
               <li key={p.id}>
                 <div className="project-card">
