@@ -16,8 +16,8 @@ Secrets are write-only from the browser, encrypted server-side, masked in API re
 |---------|----------|---------|
 | Core application | **85%** | Auth, projects, vault, agency, quality, workflows, transfer, billing framework, diagnostics, and guide are implemented locally. |
 | Data integration | **80%** | Imported project records, run history, and encrypted vault records are present; external mappings still require verification. |
-| Production readiness | **96%** | Railway, custom-domain TLS, data, workers, billing, signed webhook, migrations, and health checks are live; a controlled purchase and dedicated restricted Stripe key remain. |
-| Overall | **96%** | Core application and production infrastructure are operational; remaining work is final commercial transaction and credential-isolation validation. |
+| Production readiness | **99%** | Railway, custom-domain TLS, data, workers, restricted Stripe key, billing, signed webhook, migrations, and health checks are live; one controlled purchase remains. |
+| Overall | **98%** | Core application and production infrastructure are operational; remaining work is final commercial transaction validation. |
 
 Green UI indicators mean that available evidence passed. They do **not** prove that Railway, Stripe, DNS, or every external source record has already been changed.
 
@@ -57,6 +57,7 @@ All three may use one Stripe account. Distinguish them with separate Products an
 | Worker | `operations-studio-worker` deployed and healthy |
 | Beat scheduler | `operations-studio-beat` deployed and healthy |
 | Studio billing | Active Product; Starter $9/month; Pro $79/month; Enterprise contact sales |
+| Stripe API key | Dedicated live restricted key verified for the six minimum runtime permissions |
 | Stripe webhook | Studio-specific endpoint enabled for six billing/subscription events; unsigned requests rejected |
 | Custom domain | `studio.gilliomfrontlinedigital.com` active with valid Railway TLS certificate |
 
