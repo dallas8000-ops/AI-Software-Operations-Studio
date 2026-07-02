@@ -16,8 +16,8 @@ Secrets are write-only from the browser, encrypted server-side, masked in API re
 |---------|----------|---------|
 | Core application | **85%** | Auth, projects, vault, agency, quality, workflows, transfer, billing framework, diagnostics, and guide are implemented locally. |
 | Data integration | **80%** | Imported project records, run history, and encrypted vault records are present; external mappings still require verification. |
-| Production readiness | **99%** | Railway, custom-domain TLS, data, workers, restricted Stripe key, billing, signed webhook, migrations, and health checks are live; one controlled purchase remains. |
-| Overall | **98%** | Core application and production infrastructure are operational; remaining work is final commercial transaction validation. |
+| Production readiness | **100%** | Railway, custom-domain TLS, data, workers, restricted Stripe key, billing, signed webhook, migrations, health checks, and a controlled live Starter purchase are verified. |
+| Overall | **98%** | Production launch criteria and the live commercial transaction path are verified; the remaining scope is planned product enhancement rather than launch blocking work. |
 
 Green UI indicators mean that available evidence passed. They do **not** prove that Railway, Stripe, DNS, or every external source record has already been changed.
 
