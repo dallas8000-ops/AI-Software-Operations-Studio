@@ -180,7 +180,7 @@ class OrgPortalView(APIView):
 
         app_url = getattr(settings, "SAAS_BILLING_RETURN_URL", "http://localhost:5173")
         _get_stripe()
-        session = stripe.billingPortal.Session.create(
+        session = stripe.billing_portal.Session.create(
             customer=sub.stripe_customer_id,
             return_url=f"{app_url.rstrip('/')}/billing?org={org.slug}",
         )
@@ -282,7 +282,7 @@ class PortalView(APIView):
 
         app_url = getattr(settings, "SAAS_BILLING_RETURN_URL", "http://localhost:5173")
         _get_stripe()
-        session = stripe.billingPortal.Session.create(
+        session = stripe.billing_portal.Session.create(
             customer=sub.stripe_customer_id,
             return_url=f"{app_url.rstrip('/')}/billing",
         )

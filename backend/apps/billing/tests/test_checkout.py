@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
+from apps.billing.models import Subscription
+
 
 @override_settings(
     SAAS_STRIPE_SECRET_KEY="rk_test_billing",
@@ -59,3 +61,21 @@ class CheckoutTests(APITestCase):
         self.assertEqual(params["mode"], "subscription")
         self.assertEqual(params["line_items"], [{"price": "price_pro", "quantity": 1}])
         self.assertNotIn("payment_method_types", params)
+
+    @patch("apps.billing.views.stripe.billing_portal.Session.create")
+    def test_portal_uses_current_stripe_sdk_namespace(self, create_session):
+        Subscription.objects.create(
+            user=self.user,
+            stripe_customer_id="cus_portal_test",
+            status=Subscription.Status.ACTIVE,
+        )
+        create_session.return_value = SimpleNamespace(url="https://billing.stripe.com/test")
+
+        response = self.client.post("/api/v1/billing/portal/", {}, format="json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["url"], "https://billing.stripe.com/test")
+        create_session.assert_called_once_with(
+            customer="cus_portal_test",
+            return_url="https://app.example.com/billing",
+        )
