@@ -40,6 +40,9 @@ jobs:
         working-directory: backend
         run: python manage.py check
 
+      - name: Secret leak gate
+        run: python scripts/check-secrets.py
+
       - name: Backend tests
         working-directory: backend
         env:
