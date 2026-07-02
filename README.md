@@ -10,14 +10,17 @@ AI Software Operations Studio is a protected Django and React workspace for mana
 
 Secrets are write-only from the browser, encrypted server-side, masked in API responses, and excluded from Git. Production credentials belong in Railway Variables or a protected vault, not source code, frontend code, prompts, or logs.
 
-## Current build status
+Version 2.0 is the current production release. This README now documents the merged Operations Center experience, while the Version 1 launch and cutover details remain as historical deployment context.
 
-| Measure | Estimate | Meaning |
-|---------|----------|---------|
-| Version 1 launch scope | **100%** | Auth, projects, vault, agency, quality, workflows, transfer, billing, diagnostics, guide, deployment, and customer self-service are live. |
-| Migrated Studio data | **100%** | Project records, run history, settings, and encrypted vault records required for launch are present in production. Optional per-client external mappings remain ongoing operations. |
-| Production readiness | **100%** | Railway, custom-domain TLS, data, workers, restricted Stripe key, billing, signed webhook, migrations, health checks, and a controlled live Starter purchase are verified. |
-| Version 1 release | **100%** | Production launch, live commercial transaction, customer portal, cancellation webhook, custom domain, workers, and public portfolio listing are verified. |
+## Build status and release attribution
+
+| Build | App attribution | Status |
+|-------|-----------------|--------|
+| Version 2.0 | Account-wide Operations Center: portfolio-wide readiness, release recovery, organization visibility, GitHub connectivity reporting, and secret-free operations reporting. | **100%** |
+| Version 1.1 | Portfolio-scale usability: search, readiness and running filters, archive/restore, mobile-friendly controls, and the preserved safety baseline. | **100%** |
+| Version 1.0 | Core platform foundation: auth, projects, vault, agency, quality, workflows, transfer, billing, diagnostics, guide, deployment, and customer self-service. | **100%** |
+| Migrated Studio data | Project records, run history, settings, and encrypted vault records required for launch are present in production. | **100%** |
+| Production readiness | Railway, custom-domain TLS, data, workers, restricted Stripe key, billing, signed webhook, migrations, health checks, and a controlled live Starter purchase are verified. | **100%** |
 
 Green UI indicators mean that available evidence passed. They do **not** prove that Railway, Stripe, DNS, or every external source record has already been changed.
 
@@ -159,6 +162,14 @@ Studio incorporates capabilities from earlier applications; it does not require 
 **Version 2.0 is the current production release.** Version 1 established the secure deployment, billing, and
 project-operations foundation. Version 1.1 added portfolio-scale usability while preserving that safety model.
 Version 2 connects the mature automation modules through an account-wide Operations Center.
+
+### Version 2.0 focus
+
+- Account-wide Operations Center for readiness, release, organization, and GitHub connectivity.
+- Release-recovery candidates that identify the last successful run after a failure without making an unsafe mutation.
+- Secret-free operational reporting for owners, administrators, and viewers.
+- Direct navigation from the Studio home and global application header.
+- Existing GitHub App automation, organization roles, AI diagnostics, infrastructure generation, guarded Railway delivery, and deployment history are now presented as the Version 2.0 release surface.
 
 ### Version 2 additions
 
