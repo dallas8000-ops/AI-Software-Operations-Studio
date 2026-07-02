@@ -31,11 +31,11 @@ case "$PROCESS_TYPE" in
     ;;
   worker)
     echo "Starting Celery worker (scale to N replicas)"
-    exec celery -A config worker -l info
+    exec python process_supervisor.py celery -A config worker -l info
     ;;
   beat)
     echo "Starting Celery beat — run exactly ONE replica"
-    exec celery -A config beat -l info
+    exec python process_supervisor.py celery -A config beat -l info
     ;;
   transfer-worker)
     echo "Starting API transfer worker (scale to N replicas)"
