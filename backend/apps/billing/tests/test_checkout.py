@@ -24,9 +24,9 @@ class CheckoutTests(APITestCase):
         )
         self.client.force_authenticate(self.user)
 
-    def test_stripe_object_payload_uses_recursive_sdk_conversion(self):
+    def test_stripe_object_payload_uses_public_sdk_conversion(self):
         class StripeResource:
-            def to_dict_recursive(self):
+            def to_dict(self):
                 return {"id": "sub_recursive", "items": {"data": []}}
 
         self.assertEqual(

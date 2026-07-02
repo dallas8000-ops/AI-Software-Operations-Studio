@@ -25,6 +25,8 @@ def _get_stripe():
 
 def _stripe_object_payload(value) -> dict:
     """Convert Stripe SDK resources without relying on mapping iteration."""
+    if hasattr(value, "to_dict"):
+        return value.to_dict()
     if hasattr(value, "to_dict_recursive"):
         return value.to_dict_recursive()
     return dict(value)
