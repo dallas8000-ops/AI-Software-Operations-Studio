@@ -16,8 +16,8 @@ Secrets are write-only from the browser, encrypted server-side, masked in API re
 |---------|----------|---------|
 | Core application | **85%** | Auth, projects, vault, agency, quality, workflows, transfer, billing framework, diagnostics, and guide are implemented locally. |
 | Data integration | **80%** | Imported project records, run history, and encrypted vault records are present; external mappings still require verification. |
-| Production readiness | **75%** | Railway web, PostgreSQL, Redis, generated domain, migrations, and health checks are live; workers, custom domain, Stripe catalog, and webhook verification remain. |
-| Overall | **85%** | Core code and initial infrastructure are operational; remaining work is production completion and commercial validation. |
+| Production readiness | **90%** | Railway web, PostgreSQL, Redis, worker, scheduler, billing, signed webhook, migrations, and health checks are live; custom-domain DNS and a controlled test purchase remain. |
+| Overall | **92%** | Core application and production infrastructure are operational; remaining work is final DNS and commercial transaction validation. |
 
 Green UI indicators mean that available evidence passed. They do **not** prove that Railway, Stripe, DNS, or every external source record has already been changed.
 
@@ -53,10 +53,11 @@ All three may use one Stripe account. Distinguish them with separate Products an
 | Health endpoint | [Live health](https://operations-studio-web-production-d4ad.up.railway.app/health/) |
 | PostgreSQL | Dedicated `Postgres-V92Q` service connected; health passing |
 | Redis | Existing managed Redis, isolated to logical database 15; health passing |
-| Worker | Pending per-service non-HTTP health-check configuration |
-| Beat scheduler | Pending per-service non-HTTP health-check configuration |
-| Studio billing | Disabled until Studio-specific Stripe Products, Prices, and webhook are approved and configured |
-| Custom domain | Not assigned yet; use the generated Railway URL for validation |
+| Worker | `operations-studio-worker` deployed and healthy |
+| Beat scheduler | `operations-studio-beat` deployed and healthy |
+| Studio billing | Active Product; Starter $9/month; Pro $79/month; Enterprise contact sales |
+| Stripe webhook | Studio-specific endpoint enabled for six billing/subscription events; unsigned requests rejected |
+| Custom domain | `studio.gilliomfrontlinedigital.com` registered; DNS CNAME and certificate validation pending |
 
 The existing Specwright and Deployment-Stripe-center Railway services were not changed during this deployment.
 

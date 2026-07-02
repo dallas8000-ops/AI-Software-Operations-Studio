@@ -26,7 +26,7 @@ def _get_stripe():
 def _plans() -> list[dict]:
     plans = []
     for tier, price_id, label, amount in (
-        ("Starter", getattr(settings, "SAAS_STRIPE_PRICE_STARTER", ""), "Starter", 7900),
+        ("Starter", getattr(settings, "SAAS_STRIPE_PRICE_STARTER", ""), "Starter", 900),
         ("Pro", getattr(settings, "SAAS_STRIPE_PRICE_PRO", ""), "Pro", 7900),
         ("Enterprise", getattr(settings, "SAAS_STRIPE_PRICE_ENTERPRISE", ""), "Enterprise", 7900),
     ):
