@@ -23,6 +23,13 @@ def _get_stripe():
     return stripe
 
 
+def _stripe_object_payload(value) -> dict:
+    """Convert Stripe SDK resources without relying on mapping iteration."""
+    if hasattr(value, "to_dict_recursive"):
+        return value.to_dict_recursive()
+    return dict(value)
+
+
 def _plans() -> list[dict]:
     plans = []
     for tier, price_id, label, amount in (
@@ -78,7 +85,7 @@ class OrgSubscriptionView(APIView):
                 stripe_sub = _get_stripe().Subscription.retrieve(sub.stripe_subscription_id)
                 from apps.billing.webhooks import _sync_org_subscription
 
-                _sync_org_subscription(str(org.pk), dict(stripe_sub))
+                _sync_org_subscription(str(org.pk), _stripe_object_payload(stripe_sub))
                 sub.refresh_from_db()
             except stripe.StripeError:
                 # Keep the last signed-webhook state when Stripe is temporarily unavailable.
@@ -219,7 +226,7 @@ class SubscriptionView(APIView):
                 stripe_sub = _get_stripe().Subscription.retrieve(sub.stripe_subscription_id)
                 from apps.billing.webhooks import _sync_subscription
 
-                _sync_subscription(str(request.user.pk), dict(stripe_sub))
+                _sync_subscription(str(request.user.pk), _stripe_object_payload(stripe_sub))
                 sub.refresh_from_db()
             except stripe.StripeError:
                 # Keep the last signed-webhook state when Stripe is temporarily unavailable.

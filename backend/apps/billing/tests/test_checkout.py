@@ -6,6 +6,7 @@ from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from apps.billing.models import Subscription
+from apps.billing.views import _stripe_object_payload
 
 
 @override_settings(
@@ -22,6 +23,16 @@ class CheckoutTests(APITestCase):
             password="test-pass-123",
         )
         self.client.force_authenticate(self.user)
+
+    def test_stripe_object_payload_uses_recursive_sdk_conversion(self):
+        class StripeResource:
+            def to_dict_recursive(self):
+                return {"id": "sub_recursive", "items": {"data": []}}
+
+        self.assertEqual(
+            _stripe_object_payload(StripeResource()),
+            {"id": "sub_recursive", "items": {"data": []}},
+        )
 
     @patch("apps.billing.views.stripe.checkout.Session.create")
     def test_rejects_unconfigured_price(self, create_session):
