@@ -79,3 +79,34 @@ class CheckoutTests(APITestCase):
             customer="cus_portal_test",
             return_url="https://app.example.com/billing",
         )
+
+    @patch("apps.billing.views.stripe.Subscription.retrieve")
+    def test_subscription_read_reconciles_cancellation_from_stripe(self, retrieve):
+        period_end = 1785643200
+        Subscription.objects.create(
+            user=self.user,
+            stripe_customer_id="cus_reconcile_test",
+            stripe_subscription_id="sub_reconcile_test",
+            status=Subscription.Status.ACTIVE,
+        )
+        retrieve.return_value = {
+            "id": "sub_reconcile_test",
+            "customer": "cus_reconcile_test",
+            "status": "active",
+            "cancel_at_period_end": True,
+            "items": {
+                "data": [
+                    {
+                        "current_period_end": period_end,
+                        "price": {"id": "price_starter", "metadata": {"tier": "Starter"}},
+                    }
+                ]
+            },
+        }
+
+        response = self.client.get("/api/v1/billing/subscription/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["cancelAtPeriodEnd"])
+        self.assertIsNotNone(response.data["currentPeriodEnd"])
+        retrieve.assert_called_once_with("sub_reconcile_test")

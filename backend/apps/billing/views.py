@@ -73,6 +73,16 @@ class OrgSubscriptionView(APIView):
             return Response({"error": "Not a member of this organization"}, status=403)
 
         sub = _get_or_create_org_subscription(org)
+        if _stripe_configured() and sub.stripe_subscription_id:
+            try:
+                stripe_sub = _get_stripe().Subscription.retrieve(sub.stripe_subscription_id)
+                from apps.billing.webhooks import _sync_org_subscription
+
+                _sync_org_subscription(str(org.pk), dict(stripe_sub))
+                sub.refresh_from_db()
+            except stripe.StripeError:
+                # Keep the last signed-webhook state when Stripe is temporarily unavailable.
+                pass
         return Response(
             {
                 "organization": org.slug,
@@ -204,6 +214,16 @@ class SubscriptionView(APIView):
 
     def get(self, request):
         sub = _get_or_create_subscription(request.user)
+        if _stripe_configured() and sub.stripe_subscription_id:
+            try:
+                stripe_sub = _get_stripe().Subscription.retrieve(sub.stripe_subscription_id)
+                from apps.billing.webhooks import _sync_subscription
+
+                _sync_subscription(str(request.user.pk), dict(stripe_sub))
+                sub.refresh_from_db()
+            except stripe.StripeError:
+                # Keep the last signed-webhook state when Stripe is temporarily unavailable.
+                pass
         return Response(
             {
                 "tier": sub.tier or None,
