@@ -370,7 +370,7 @@ ORG_FREE_MEMBER_LIMIT = os.environ.get("ORG_FREE_MEMBER_LIMIT", "3")
 ORG_FREE_PROJECT_LIMIT = os.environ.get("ORG_FREE_PROJECT_LIMIT", "5")
 
 # Public app URL (invites, billing return). Set APP_PUBLIC_URL or SAAS_BILLING_RETURN_URL in production.
-APP_VERSION = os.environ.get("APP_VERSION", "1.1.0")
+APP_VERSION = os.environ.get("APP_VERSION", "2.0.0")
 ORG_INVITE_EXPIRY_DAYS = os.environ.get("ORG_INVITE_EXPIRY_DAYS", "14")
 INVITE_EMAIL_ENABLED = os.environ.get("INVITE_EMAIL_ENABLED", "true").lower() == "true"
 EMAIL_BACKEND = os.environ.get(

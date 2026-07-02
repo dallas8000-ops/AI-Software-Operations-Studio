@@ -156,8 +156,20 @@ Studio incorporates capabilities from earlier applications; it does not require 
 
 ## Status
 
-**Version 1.1 is the current production release.** Version 1 established the secure deployment, billing, and
-project-operations foundation. Version 1.1 adds portfolio-scale usability while preserving that safety model.
+**Version 2.0 is the current production release.** Version 1 established the secure deployment, billing, and
+project-operations foundation. Version 1.1 added portfolio-scale usability while preserving that safety model.
+Version 2 connects the mature automation modules through an account-wide Operations Center.
+
+### Version 2 additions
+
+- Portfolio-wide readiness, release, organization, and GitHub connectivity reporting.
+- Release-recovery candidates that identify the last successful run after a failure without performing an unsafe
+  automatic production mutation.
+- Recent audit activity across every accessible personal and agency project.
+- A secret-free operations report suitable for owners, administrators, and viewers.
+- Direct navigation from the Studio home and global application header.
+- Existing GitHub App automation, organization roles, AI diagnostics, infrastructure generation, guarded Railway
+  delivery, and deployment history form the Version 2 automation layer.
 
 ### Version 1.1 additions
 

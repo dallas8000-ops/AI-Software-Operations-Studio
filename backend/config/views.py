@@ -95,7 +95,7 @@ def health(_request):
 
     payload = {
         "status": "ok" if ok else "degraded",
-        "version": getattr(settings, "APP_VERSION", "1.1.0"),
+        "version": getattr(settings, "APP_VERSION", "2.0.0"),
         "apiRevision": API_REVISION,
         "checks": checks,
     }

@@ -179,6 +179,52 @@ export interface Project {
   stripe_exempt?: boolean;
 }
 
+export interface OperationsReport {
+  generatedAt: string;
+  summary: {
+    projects: number;
+    archivedProjects: number;
+    averageReadiness: number | null;
+    readyProjects: number;
+    needsAttention: number;
+    running: number;
+    failed24h: number;
+    deployments24h: number;
+    organizations: number;
+    githubConnectedOrganizations: number;
+  };
+  projects: Array<{
+    slug: string;
+    name: string;
+    organization: string | null;
+    archived: boolean;
+    readinessScore: number | null;
+    lastRunStatus: string | null;
+    lastRunAt: string | null;
+    productionUrl: string;
+  }>;
+  recentActivity: Array<{
+    project: string;
+    projectSlug: string;
+    action: string;
+    actor: string | null;
+    createdAt: string;
+  }>;
+  recoveryCandidates: Array<{
+    project: string;
+    projectSlug: string;
+    failedRunId: string;
+    failedAt: string;
+    error: string;
+    previousSuccessfulRunId: string | null;
+    recoveryAvailable: boolean;
+  }>;
+}
+
+export const operationsApi = {
+  report: () => apiFetch<OperationsReport>("/studio/operations-report/"),
+};
+
 export interface QualitySummary {
   connected: boolean;
   status: "ready" | "unavailable";

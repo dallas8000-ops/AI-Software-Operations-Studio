@@ -8,6 +8,7 @@ import { useAuth } from "../auth/AuthContext";
 const NAV = [
   { to: "/", label: "Studio", match: (path: string) => path === "/" },
   { to: "/projects", label: "Projects", match: (path: string) => path.startsWith("/projects") },
+  { to: "/operations", label: "Operations", match: (path: string) => path.startsWith("/operations") },
   { to: "/quality", label: "Quality", match: (path: string) => path.startsWith("/quality") },
   { to: "/workflows", label: "Workflows", match: (path: string) => path.startsWith("/workflows") },
   { to: "/guide", label: "Guide", match: (path: string) => path.startsWith("/guide") },

@@ -35,7 +35,7 @@ def init_sentry() -> bool:
         traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
         profiles_sample_rate=float(os.environ.get("SENTRY_PROFILES_SAMPLE_RATE", "0")),
         environment=os.environ.get("SENTRY_ENVIRONMENT", "development" if debug else "production"),
-        release=os.environ.get("APP_VERSION", "1.1.0"),
+        release=os.environ.get("APP_VERSION", "2.0.0"),
         send_default_pii=False,
     )
     _initialized = True

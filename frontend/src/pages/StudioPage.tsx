@@ -2,6 +2,14 @@ import { Link } from "react-router-dom";
 
 const workspaces = [
   {
+    eyebrow: "INTELLIGENCE",
+    title: "Operations Center",
+    description: "See portfolio readiness, release recovery evidence, team connectivity, and recent changes.",
+    to: "/operations",
+    action: "Open operations center",
+    status: "Active",
+  },
+  {
     eyebrow: "OPERATE",
     title: "Application Operations",
     description: "Track application readiness, environments, releases, and infrastructure from one control plane.",
