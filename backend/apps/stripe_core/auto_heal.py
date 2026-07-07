@@ -31,6 +31,8 @@ class HealPolicy:
                 "sync-env",
                 "create-stripe-config",
                 "normalize-webhook-url",
+                "repair-webhook-delivery",
+                "provision-stripe",
             ]
 
 
@@ -186,7 +188,26 @@ def run_auto_heal_with_drift(
         pass
 
     # Run auto-heal
-    return run_auto_heal(project, policy=policy, dry_run=False, app_url=app_url)
+    heal_result = run_auto_heal(project, policy=policy, dry_run=False, app_url=app_url)
+
+    # Also repair webhook delivery failures (signature mismatch / high error rate)
+    delivery_repairs: list = []
+    try:
+        from apps.stripe_core.webhook_delivery import assess_webhook_delivery, auto_repair_webhook_delivery
+
+        assessment = assess_webhook_delivery(project)
+        if assessment.needsRepair:
+            delivery_repairs.append(
+                auto_repair_webhook_delivery(project)
+            )
+    except Exception:
+        pass
+
+    if delivery_repairs and delivery_repairs[0].get("ok"):
+        heal_result.issues_auto_fixed += 1
+        heal_result.success = True
+
+    return heal_result
 
 
 def get_heal_recommendations(project: Project) -> list[dict[str, Any]]:

@@ -42,10 +42,14 @@ MERGED_INTO_PROJECT_SLUGS: dict[str, str] = {
 }
 
 HUB_SLUG = "stripe-installer"
+HUB_WEB_URL = "https://studio.gilliomfrontlinedigital.com"
+HUB_API_URL = "https://api.gilliomfrontlinedigital.com"
+HUB_CANONICAL_URL = HUB_WEB_URL
+HUB_WEBHOOK_PATH = "/api/v1/billing/webhook/"
 
 # Mirror FrontlineDigital DevCollective/frontend/src/data/portfolioLiveUrls.ts (portfolio Live demo buttons).
 PORTFOLIO_LIVE_URLS: dict[str, str] = {
-    "automationCenter": "https://stripe-installer-production.up.railway.app/login",
+    "automationCenter": f"{HUB_WEB_URL}/login",
     "eastbridge": "https://eastbridge-ops-production.up.railway.app",
     "agripayLogistics": "https://agripay-api-production.up.railway.app/demo",
     "eliteFintech": "https://elite-fintech-web-production.up.railway.app/demo",
@@ -99,21 +103,22 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "name": "EastBridge Ops Intelligence",
         "productionUrl": "https://eastbridge-ops-production.up.railway.app",
         "portfolioDemoUrl": "https://eastbridge.gilliomfrontlinedigital.com",
+        "webhookPath": "/stripe/webhook",
         "healthPath": "/api/v1/health/",
         "projectSlug": "eastbridge-ops",
         "defaultLocalPath": r"C:\Software Projects\EastBridge Ops Intelligence",
-        "stripeExempt": True,
         "notes": "EU→East Africa compliance, trade, vendor intelligence — monorepo Django+React on Railway",
     },
     {
         "id": "automation-center",
         "name": "Deployment & Stripe Automation Center",
-        "productionUrl": "https://stripe-installer-production.up.railway.app",
-        "webhookPath": "/api/v1/billing/webhook/",
+        "productionUrl": HUB_API_URL,
+        "webProductionUrl": HUB_WEB_URL,
+        "webhookPath": HUB_WEBHOOK_PATH,
         "healthPath": "/health/",
         "projectSlug": "stripe-installer",
         "defaultLocalPath": r"C:\Software Projects\Deployment-Stripe-center",
-        "notes": "Unified Stripe setup + deploy hub",
+        "notes": "Studio web at studio.* — API + webhooks at api.* (same Railway service, two custom domains)",
     },
         {
             "id": "elite-fintech",
@@ -195,7 +200,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "id": "pc-checker-extreme",
         "name": "PC Checker Extreme",
         "productionUrl": "https://pc-checker-extreme-production.up.railway.app",
-        "webhookPath": "/api/v1/billing/webhook/",
+        "webhookPath": "/stripe/webhook",
         "healthPath": "/health/",
         "projectSlug": "pc-checker-extreme",
         "defaultLocalPath": r"C:\Software Projects\PC Checker Extreme",
@@ -204,7 +209,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "id": "dbops",
         "name": "DBOps Control Center",
         "productionUrl": "https://dbops-api-production-5047.up.railway.app",
-        "webhookPath": "/api/v1/billing/webhook/",
+        "webhookPath": "/billing/webhook",
         "healthPath": "/health/",
         "projectSlug": "dbops-control-center",
         "defaultLocalPath": r"C:\Software Projects\DBOps-Control-Center",
@@ -224,7 +229,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "id": "enpowercommand",
         "name": "EnPowerCommand",
         "productionUrl": "https://enpowercommand-production.up.railway.app",
-        "webhookPath": "/api/v1/billing/webhook/",
+        "webhookPath": "/api/billing/webhook",
         "healthPath": "/health/",
         "projectSlug": "enpowercommand",
         "defaultLocalPath": r"C:\Software Projects\EnPowerCommand",

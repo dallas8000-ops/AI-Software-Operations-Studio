@@ -178,6 +178,11 @@ STORAGES = {
 GIT_SSH_KEY_PATH = os.environ.get("GIT_SSH_KEY_PATH", "")
 GIT_CREDENTIALS_PATH = os.environ.get("GIT_CREDENTIALS_PATH", "")
 
+APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL") or _public_app_url()
+STUDIO_API_URL = os.environ.get("STUDIO_API_URL", "").strip().rstrip("/")
+if not STUDIO_API_URL and APP_PUBLIC_URL.startswith("https://studio."):
+    STUDIO_API_URL = "https://api.gilliomfrontlinedigital.com"
+
 _cors_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_env.split(",") if o.strip()] or [
     "http://localhost:5173",
@@ -187,10 +192,25 @@ if RAILWAY_PUBLIC_DOMAIN:
     _co = f"https://{RAILWAY_PUBLIC_DOMAIN}"
     if _co not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(_co)
-for _co in (_public_app_url(),):
+for _co in (_public_app_url(), STUDIO_API_URL):
     if _co.startswith("http") and _co not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(_co)
 CORS_ALLOW_CREDENTIALS = True
+
+_csrf_env = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_env.split(",") if o.strip()]
+for _origin in CORS_ALLOWED_ORIGINS:
+    if _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+
+for _url in (APP_PUBLIC_URL, STUDIO_API_URL):
+    if not _url.startswith("http"):
+        continue
+    from urllib.parse import urlparse
+
+    host = urlparse(_url).hostname
+    if host and host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -221,11 +241,8 @@ SAAS_STRIPE_WEBHOOK_SECRET = os.environ.get("SAAS_STRIPE_WEBHOOK_SECRET", "")
 SAAS_STRIPE_PRICE_STARTER = os.environ.get("SAAS_STRIPE_PRICE_STARTER", "")
 SAAS_STRIPE_PRICE_PRO = os.environ.get("SAAS_STRIPE_PRICE_PRO", "")
 SAAS_STRIPE_PRICE_ENTERPRISE = os.environ.get("SAAS_STRIPE_PRICE_ENTERPRISE", "")
-SAAS_BILLING_RETURN_URL = os.environ.get("SAAS_BILLING_RETURN_URL") or _public_app_url()
+SAAS_BILLING_RETURN_URL = os.environ.get("SAAS_BILLING_RETURN_URL") or APP_PUBLIC_URL
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-05-27.dahlia")
-
-# Public app URL (invites, billing return, license validation server default)
-APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL") or _public_app_url()
 
 # Read-only Specwright adapter. Empty by default so the Studio degrades safely
 # until a local or staging Specwright API is explicitly connected.

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from celery import shared_task
 
 from apps.core.distributed_lock import beat_singleton
@@ -85,17 +87,39 @@ def auto_heal_all_projects_task(app_url: str = "http://localhost:8000") -> dict:
 @shared_task(name="stripe_engine.health_monitor_all_projects")
 @beat_singleton("health_monitor_all_projects", ttl_seconds=3600)
 def health_monitor_all_projects_task() -> dict:
-    """Run health monitoring on all projects and alert on critical issues."""
+    """Run health monitoring on all projects and auto-repair webhook delivery failures."""
     from apps.stripe_core.health_monitor import run_all_projects_health_monitor
+    from apps.stripe_core.webhook_delivery import assess_and_repair_if_needed
 
     result = run_all_projects_health_monitor()
     summary = result.get("summary", {})
 
-    # Log critical projects for alerting
     critical_projects = [
         r for r in result.get("reports", [])
         if r.get("overallStatus") == "critical"
     ]
+
+    repaired: list[dict[str, Any]] = []
+    for report in critical_projects:
+        slug = report.get("projectSlug")
+        if not slug:
+            continue
+        webhook_metric = next(
+            (m for m in report.get("metrics", []) if m.get("name") == "webhook_health"),
+            None,
+        )
+        if not webhook_metric:
+            continue
+        value = webhook_metric.get("value") or {}
+        if not value.get("autoRepairRecommended"):
+            continue
+        try:
+            project = Project.objects.get(slug=slug)
+            repair_result = assess_and_repair_if_needed(project)
+            if repair_result.get("repaired"):
+                repaired.append({"project": slug, "ok": repair_result.get("ok", False)})
+        except Project.DoesNotExist:
+            continue
 
     return {
         "total": summary.get("total", 0),
@@ -103,6 +127,7 @@ def health_monitor_all_projects_task() -> dict:
         "warning": summary.get("warning", 0),
         "critical": summary.get("critical", 0),
         "criticalProjects": critical_projects,
+        "webhookRepairs": repaired,
         "timestamp": result.get("timestamp"),
     }
 

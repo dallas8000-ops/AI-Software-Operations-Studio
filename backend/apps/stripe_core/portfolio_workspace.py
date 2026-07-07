@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 from django.conf import settings
@@ -116,10 +115,10 @@ def resolve_workspace_path(project: Project) -> str | None:
     canonical = catalog_local_path(project.slug)
     explicit = _valid_local_path(project)
 
-    if canonical and Path(canonical).is_dir():
-        return str(Path(canonical).resolve())
     if explicit and Path(explicit).is_dir():
         return str(Path(explicit).resolve())
+    if canonical and Path(canonical).is_dir():
+        return str(Path(canonical).resolve())
     if canonical and not is_inside_hub_repo(canonical):
         return canonical
     if explicit:
@@ -210,34 +209,12 @@ def ensure_project_workspace(project: Project) -> tuple[str, bool]:
 
 
 def reconcile_hub_workspace(project: Project) -> tuple[str, bool]:
-    """Repair local_path and delete stale hub clone dirs when a bad path is detected."""
-    before = (project.local_path or "").strip()
-    was_invalid = bool(before and is_invalid_portfolio_path(project, before))
-    path, changed = repair_portfolio_local_path(project)
-    if was_invalid:
-        remove_stale_hub_workspaces()
-    return path, changed
-
-
-def remove_stale_hub_workspaces() -> list[str]:
-    """Delete any legacy workspace folders created inside backend/ (clones, cloneN, etc.)."""
-    removed: list[str] = []
-    backend = Path(settings.BASE_DIR)
-    candidates: list[Path] = []
-    clones = backend / "clones"
-    if clones.exists():
-        candidates.append(clones)
-    for path in backend.glob("clone*"):
-        if path.is_dir() and path not in candidates:
-            candidates.append(path)
-    for path in candidates:
-        shutil.rmtree(path, ignore_errors=True)
-        removed.append(str(path))
-    return removed
+    """Repair a project record to its single canonical repository path."""
+    return repair_portfolio_local_path(project)
 
 
 def reconcile_all_portfolio_workspaces() -> dict[str, list[str]]:
-    """Repair every non-hub project and delete legacy backend/clones folders."""
+    """Repair every non-hub project without creating or deleting repositories."""
     from apps.projects.models import Project
 
     repaired: list[str] = []
@@ -246,8 +223,7 @@ def reconcile_all_portfolio_workspaces() -> dict[str, list[str]]:
         _, changed = reconcile_hub_workspace(project)
         if changed or (before and is_invalid_portfolio_path(project, before)):
             repaired.append(project.slug)
-    removed = remove_stale_hub_workspaces()
-    return {"repaired": repaired, "removed": removed}
+    return {"repaired": repaired, "removed": []}
 
 
 def sync_portfolio_scan_metadata(project: Project, *, save: bool = True) -> None:

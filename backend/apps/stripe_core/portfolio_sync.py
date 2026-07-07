@@ -9,6 +9,7 @@ from apps.projects.models import Project
 from .portfolio_catalog import PORTFOLIO_CATALOG, catalog_summary, is_merged_legacy_slug
 from .portfolio_paths import portfolio_registry_path
 from .portfolio_registry import PortfolioApp, ensure_registry_template, save_registry
+from .portfolio_workspace import resolve_workspace_path
 
 
 def catalog_entry_to_app(entry: dict[str, Any], *, local_path: str = "") -> PortfolioApp:
@@ -36,7 +37,7 @@ def sync_portfolio_registry(projects: list[Project] | None = None) -> dict[str, 
             continue
         slug = str(raw.get("projectSlug") or "")
         project = by_slug.get(slug)
-        local_path = project.local_path if project and project.local_path else ""
+        local_path = (resolve_workspace_path(project) or "") if project else ""
         apps.append(catalog_entry_to_app(raw, local_path=local_path))
 
     path = save_registry(apps)

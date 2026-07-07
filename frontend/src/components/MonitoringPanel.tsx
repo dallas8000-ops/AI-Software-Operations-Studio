@@ -92,6 +92,22 @@ export default function MonitoringPanel({ projectSlug, lastDrift, onResynced }: 
     }
   }
 
+  async function repairWebhookDelivery() {
+    setLoading("webhook-repair");
+    setError("");
+    try {
+      const res = await monitoringApi.repairWebhookDelivery(projectSlug);
+      setWebhook(res.health);
+      if (!res.ok) {
+        setError("Webhook repair did not fully succeed — check audit details");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Webhook repair failed");
+    } finally {
+      setLoading("");
+    }
+  }
+
   const displayDrift = drift;
 
   return (
@@ -122,6 +138,17 @@ export default function MonitoringPanel({ projectSlug, lastDrift, onResynced }: 
         <button type="button" className="btn btn-secondary" onClick={loadWebhookHealth} disabled={!!loading}>
           {loading === "webhook" ? "Checking…" : "Webhook health"}
         </button>
+        {webhook?.autoRepairRecommended && (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={repairWebhookDelivery}
+            disabled={!!loading}
+            title="Rotate signing secret, sync vault, and push to Railway"
+          >
+            {loading === "webhook-repair" ? "Repairing…" : "Auto-repair webhook"}
+          </button>
+        )}
       </div>
 
       {displayDrift && (
@@ -159,14 +186,31 @@ export default function MonitoringPanel({ projectSlug, lastDrift, onResynced }: 
         <div className="copilot-result">
           <h3>
             Webhook health
-            {webhook.healthy && webhook.deliveryEvidence?.status !== "inactive" ? (
+            {webhook.healthy ? (
               <span className="badge badge-ok">Healthy</span>
             ) : (
               <span className="badge badge-warn">
-                {webhook.deliveryEvidence?.status === "inactive" ? "No recent activity" : "Issues found"}
+                {webhook.deliveryEvidence?.status === "failing"
+                  ? `~${webhook.deliveryEvidence.successRate ?? "?"}% success`
+                  : webhook.deliveryEvidence?.status === "inactive"
+                    ? "No recent activity"
+                    : "Issues found"}
               </span>
             )}
           </h3>
+          {webhook.deliveryStats && webhook.deliveryStats.sampleSufficient && (
+            <p className="muted">
+              Delivery success ~{Math.round((webhook.deliveryStats.successRate ?? 0) * 100)}% over last{" "}
+              {webhook.deliveryStats.lookbackHours}h ({webhook.deliveryStats.failedDeliveries} failed of{" "}
+              {webhook.deliveryStats.totalEvents} events).
+            </p>
+          )}
+          {webhook.signatureProbe && (
+            <p className="muted">
+              Live probe: <code>{webhook.signatureProbe.classification}</code>
+              {webhook.signatureProbe.httpStatus != null && ` (HTTP ${webhook.signatureProbe.httpStatus})`}
+            </p>
+          )}
           {webhook.deliveryEvidence && (
             <div className="alert">
               <strong>Delivery evidence:</strong> {webhook.deliveryEvidence.message}

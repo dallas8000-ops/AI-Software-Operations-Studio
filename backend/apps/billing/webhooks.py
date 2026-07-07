@@ -239,7 +239,9 @@ def billing_webhook(request):
     if request.method != "POST":
         return HttpResponse(status=405)
 
-    secret = getattr(settings, "SAAS_STRIPE_WEBHOOK_SECRET", "")
+    secret = getattr(settings, "SAAS_STRIPE_WEBHOOK_SECRET", "") or getattr(
+        settings, "STRIPE_WEBHOOK_SECRET", ""
+    )
     if not secret:
         return HttpResponse("Webhook secret not configured", status=400)
 

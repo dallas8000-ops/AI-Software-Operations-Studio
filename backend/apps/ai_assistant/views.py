@@ -256,3 +256,18 @@ class WebhookHealthView(ProjectOwnedMixin, APIView):
             return Response(webhook_health(project))
         except RuntimeError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, project_slug: str):
+        """Auto-repair webhook delivery failures (rotate whsec_, push Railway)."""
+        project = self.get_project(project_slug, min_role="admin")
+        action = (request.data.get("action") or "repair").strip().lower()
+        if action != "repair":
+            return Response({"error": f"Unknown action: {action}"}, status=status.HTTP_400_BAD_REQUEST)
+        from apps.stripe_core.webhook_delivery import auto_repair_webhook_delivery
+
+        result = auto_repair_webhook_delivery(project)
+        try:
+            health = webhook_health(project)
+        except RuntimeError as exc:
+            health = {"error": str(exc)}
+        return Response({"ok": result.get("ok", False), "repair": result, "health": health})

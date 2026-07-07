@@ -575,6 +575,7 @@ def repair_project_secret_placement(project: Project, *, hub: Project | None = N
     from apps.deploy.env_push import try_auto_push_railway_stripe_env
     from apps.stripe_core.portfolio_audit import fix_webhooks_for_projects
     from apps.stripe_core.portfolio_registry import load_registry
+    from apps.stripe_core.portfolio_sync import sync_portfolio_registry
 
     if is_stripe_exempt_slug(project.slug):
         return {"ok": True, "skipped": True, "message": "Stripe exempt"}
@@ -582,6 +583,10 @@ def repair_project_secret_placement(project: Project, *, hub: Project | None = N
     if not project.local_path or not Path(project.local_path).is_dir():
         return {"ok": False, "message": "local_path missing or not a directory"}
 
+    # Audit resolves expected URLs from the catalog. Keep the persisted registry
+    # in sync before repair so action and diagnosis cannot target different URLs.
+    owner_projects = list(Project.objects.filter(owner=project.owner))
+    sync_portfolio_registry(owner_projects)
     registry = load_registry()
     fixes = fix_webhooks_for_projects([project], registry, dry_run=False)
     row = fixes[0] if fixes else {"ok": False, "message": "No webhook fix result"}

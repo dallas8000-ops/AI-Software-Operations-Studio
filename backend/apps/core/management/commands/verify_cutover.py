@@ -12,10 +12,10 @@ from django.core.management.base import BaseCommand
 
 
 UNIFIED_RAILWAY_HEALTH = "https://stripe-installer-production.up.railway.app/health/"
-UNIFIED_CUSTOM_HEALTH = "https://stripe-installer.gilliomfrontlinedigital.com/health/"
+UNIFIED_CUSTOM_HEALTH = "https://studio.gilliomfrontlinedigital.com/health/"
 LEGACY_HEALTH = "https://api-transfer-production.up.railway.app/health/"
 UNIFIED_WEBHOOK_RAILWAY = "https://stripe-installer-production.up.railway.app/api/v1/billing/webhook/"
-UNIFIED_WEBHOOK_CUSTOM = "https://stripe-installer.gilliomfrontlinedigital.com/api/v1/billing/webhook/"
+UNIFIED_WEBHOOK_CUSTOM = "https://api.gilliomfrontlinedigital.com/api/v1/billing/webhook/"
 LEGACY_WEBHOOK = "https://api-transfer-production.up.railway.app/api/billing/webhook"
 
 

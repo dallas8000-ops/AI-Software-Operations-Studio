@@ -1,4 +1,4 @@
-"""Post-deploy Stripe webhook health — API metadata only."""
+"""Post-deploy Stripe webhook health — API metadata + delivery failure detection."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ import stripe
 
 from apps.projects.models import Project
 from apps.stripe_core.hub_keys import resolve_expected_webhook_url
+from apps.stripe_core.portfolio_catalog import is_stripe_exempt_slug
+from apps.stripe_core.webhook_delivery import assess_webhook_delivery
 from apps.vault.models import get_secret
 
 
@@ -66,6 +68,37 @@ def webhook_health(project: Project) -> dict[str, Any]:
             "message": "Could not read recent Stripe events, so delivery activity is unknown.",
         }
 
+    delivery_assessment = None
+    delivery_stats = None
+    signature_probe = None
+    if not is_stripe_exempt_slug(project.slug):
+        try:
+            assessment = assess_webhook_delivery(project)
+            delivery_assessment = assessment.to_dict()
+            delivery_stats = assessment.deliveryStats.to_dict() if assessment.deliveryStats else None
+            signature_probe = assessment.signatureProbe.to_dict() if assessment.signatureProbe else None
+            if assessment.deliveryStats and assessment.deliveryStats.sampleSufficient:
+                rate = assessment.deliveryStats.successRate
+                if rate is not None:
+                    success_pct = round(rate * 100, 1)
+                    delivery_evidence = {
+                        "status": "failing" if assessment.deliveryStats.highFailureRate else "healthy",
+                        "level": "error" if assessment.deliveryStats.highFailureRate else "info",
+                        "recentStripeEventCount": assessment.deliveryStats.totalEvents,
+                        "successRate": success_pct,
+                        "failedDeliveries": assessment.deliveryStats.failedDeliveries,
+                        "message": (
+                            f"Webhook delivery success ~{success_pct}% over last "
+                            f"{assessment.deliveryStats.lookbackHours}h "
+                            f"({assessment.deliveryStats.failedDeliveries} failed)."
+                            if assessment.deliveryStats.highFailureRate
+                            else f"Webhook delivery success ~{success_pct}% over last "
+                            f"{assessment.deliveryStats.lookbackHours}h."
+                        ),
+                    }
+        except Exception:
+            delivery_assessment = None
+
     issues = []
     if expected and not any(r.get("matchesExpected") for r in endpoint_rows):
         issues.append(
@@ -73,6 +106,8 @@ def webhook_health(project: Project) -> dict[str, Any]:
                 "severity": "warning",
                 "message": f"No webhook endpoint matches expected URL {expected}",
                 "fix": "Run provision-stripe or update webhook in Stripe Dashboard",
+                "autoFixable": True,
+                "fixAction": "provision-stripe",
             }
         )
     disabled = [r for r in endpoint_rows if r.get("status") != "enabled"]
@@ -82,8 +117,24 @@ def webhook_health(project: Project) -> dict[str, Any]:
                 "severity": "error",
                 "message": f"Webhook {row['id']} is {row['status']}",
                 "fix": "Enable endpoint in Stripe Dashboard",
+                "autoFixable": False,
             }
         )
+
+    if delivery_assessment:
+        for issue in delivery_assessment.get("issues") or []:
+            issues.append(
+                {
+                    "severity": issue.get("severity", "warning"),
+                    "message": issue.get("message", ""),
+                    "fix": issue.get("fix", ""),
+                    "autoFixable": bool(issue.get("autoFixable")),
+                    "fixAction": "repair-webhook-delivery" if issue.get("autoFixable") else None,
+                    "code": issue.get("code"),
+                }
+            )
+
+    healthy = not any(i.get("severity") == "error" for i in issues)
 
     return {
         "expectedWebhookUrl": expected,
@@ -91,6 +142,10 @@ def webhook_health(project: Project) -> dict[str, Any]:
         "recentEventTypes": recent_types,
         "recentStripeEventCount": recent_event_count,
         "deliveryEvidence": delivery_evidence,
+        "deliveryStats": delivery_stats,
+        "signatureProbe": signature_probe,
+        "deliveryAssessment": delivery_assessment,
         "issues": issues,
-        "healthy": len(issues) == 0,
+        "healthy": healthy,
+        "autoRepairRecommended": bool(delivery_assessment and delivery_assessment.get("needsRepair")),
     }

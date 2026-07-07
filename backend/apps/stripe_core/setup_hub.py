@@ -15,6 +15,10 @@ from apps.stripe_core.portfolio_audit import (
     write_portfolio_report,
 )
 from apps.stripe_core.portfolio_catalog import (
+    HUB_API_URL,
+    HUB_CANONICAL_URL,
+    HUB_WEBHOOK_PATH,
+    HUB_WEB_URL,
     catalog_by_slug,
     catalog_live_urls,
     catalog_summary,
@@ -39,8 +43,8 @@ from apps.vault.models import clear_project_vault, get_secret, set_secret, vault
 
 PROJECT_NAME = "Deployment & Stripe Automation Center"
 REGISTRY_ID = "automation-center"
-PRODUCTION_URL = "https://stripe-installer-production.up.railway.app"
-WEBHOOK_PATH = "/api/v1/billing/webhook/"
+PRODUCTION_URL = HUB_API_URL
+WEBHOOK_PATH = HUB_WEBHOOK_PATH
 
 
 def default_production_url() -> str:
@@ -106,7 +110,7 @@ def reset_workspace(project: Project, *, clear_vault: bool = False) -> dict[str,
         changed.append("name")
     if project.local_path != local_path:
         project.local_path = local_path
-        changed.append("localPath")
+        changed.append("local_path")
     if changed:
         project.save(update_fields=changed + ["updated_at"])
 
@@ -227,17 +231,18 @@ def sync_registry_for_user(user) -> dict[str, Any]:
     return sync_portfolio_registry(projects)
 
 
-HUB_PRODUCTION_HOST = "stripe-installer-production.up.railway.app"
+HUB_PRODUCTION_HOST = "api.gilliomfrontlinedigital.com"
+HUB_WEB_HOST = "studio.gilliomfrontlinedigital.com"
 
 
 def _display_webhook_for_project(project: Project, expected: str, detail: str) -> str:
     """Never show the hub billing webhook on portfolio child projects."""
     if project.slug == HUB_SLUG:
         return detail if str(detail).startswith("http") else expected
-    if expected and HUB_PRODUCTION_HOST not in expected:
+    if expected and HUB_PRODUCTION_HOST not in expected and HUB_WEB_HOST not in expected:
         return expected
     resolved = resolve_expected_webhook_url(project)
-    if resolved and HUB_PRODUCTION_HOST not in resolved:
+    if resolved and HUB_PRODUCTION_HOST not in resolved and HUB_WEB_HOST not in resolved:
         return resolved
     return expected
 

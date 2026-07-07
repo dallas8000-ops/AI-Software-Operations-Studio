@@ -32,11 +32,6 @@ class Command(BaseCommand):
         )
         parser.add_argument("--user", default="", help="Owner email (default: first user)")
         parser.add_argument("--skip-vault", action="store_true", help="Only fix paths")
-        parser.add_argument(
-            "--remove-stale-workspaces",
-            action="store_true",
-            help="Delete legacy backend/clones and backend/clone* folders inside this hub",
-        )
 
     def handle(self, *args, **options):
         from apps.diagnostics.diagnostics import run_diagnostics
@@ -44,7 +39,6 @@ class Command(BaseCommand):
         from apps.stripe_core.portfolio_workspace import (
             is_invalid_portfolio_path,
             reconcile_hub_workspace,
-            remove_stale_hub_workspaces,
             resolve_workspace_path,
         )
         from apps.vault.models import clear_project_vault, get_secret, set_secret, vault_health
@@ -65,8 +59,8 @@ class Command(BaseCommand):
         else:
             project_qs = Project.objects.none()
 
-        if not project_qs.exists() and not options.get("remove_stale_workspaces"):
-            raise CommandError("Pass --project <slug>, --all, --all-projects, or --remove-stale-workspaces")
+        if not project_qs.exists():
+            raise CommandError("Pass --project <slug>, --all, or --all-projects")
 
         default_hub = Project.objects.filter(owner=owner, slug=HUB_SLUG).first()
 
@@ -136,13 +130,6 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(f"{slug}: open {target_path} in your editor and ensure the repo exists there")
                 )
-
-        if options.get("remove_stale_workspaces") or repaired:
-            removed = remove_stale_hub_workspaces()
-            if removed:
-                self.stdout.write(self.style.SUCCESS(f"Removed stale hub workspace(s): {', '.join(removed)}"))
-            else:
-                self.stdout.write("No stale hub workspace folders found")
 
         if repaired:
             self.stdout.write(

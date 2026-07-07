@@ -49,9 +49,11 @@ export function filterVisibleProjects<T extends { slug: string }>(projects: T[])
 /** The Studio hub itself; displayed here but never managed as a client workspace. */
 export const PLATFORM_PROJECT = {
   name: "AI Software Operations Studio",
+  webUrl: "https://studio.gilliomfrontlinedigital.com",
+  apiUrl: "https://api.gilliomfrontlinedigital.com",
   productionUrl: "https://studio.gilliomfrontlinedigital.com",
   repositoryUrl: "https://github.com/dallas8000-ops/AI-Software-Operations-Studio",
-  note: "Live platform hub for project readiness, secure configuration, billing, and deployment automation.",
+  note: "Web at studio.* · API + webhooks at api.* — same Railway stack, split custom domains.",
   readinessScore: 100,
 } as const;
 

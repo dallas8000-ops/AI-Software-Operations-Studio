@@ -25,8 +25,12 @@ Set these in **Railway → your service → Variables** (not only in local `back
 | `DJANGO_SECRET_KEY` | Random 50+ chars |
 | `DJANGO_DEBUG` | `false` |
 | `DATABASE_URL` | Auto-set when you add the **PostgreSQL** plugin |
+| `APP_PUBLIC_URL` | `https://studio.gilliomfrontlinedigital.com` (web UI origin) |
+| `STUDIO_API_URL` | `https://api.gilliomfrontlinedigital.com` (API + webhooks; auto-inferred when `APP_PUBLIC_URL` starts with `https://studio.`) |
+| `VITE_API_BASE` | `https://api.gilliomfrontlinedigital.com/api/v1` — **build-time**; redeploy after change |
+| `VITE_WS_BASE` | `wss://api.gilliomfrontlinedigital.com` — pipeline WebSocket origin |
 | `SAAS_STRIPE_SECRET_KEY` | Studio billing credential; prefer a least-privilege restricted key where supported |
-| `SAAS_STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `SAAS_STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret for **api** host billing URL |
 | `SAAS_STRIPE_PRICE_*` | Price IDs for plans |
 
 ### Vault master key (read this first)
@@ -79,9 +83,11 @@ Create a Studio-specific endpoint. Do not repoint or disable the existing applic
 
 | Endpoint | URL |
 |----------|-----|
-| SaaS billing | `https://<your-domain>/api/v1/billing/webhook/` |
-| GitHub App | `https://<your-domain>/api/v1/webhooks/github/` |
-| License validate | `https://<your-domain>/api/v1/license/validate/` |
+| SaaS billing | `https://api.<your-domain>/api/v1/billing/webhook/` (Gilliom: `api.gilliomfrontlinedigital.com`) |
+| GitHub App | `https://api.<your-domain>/api/v1/webhooks/github/` |
+| License validate | `https://api.<your-domain>/api/v1/license/validate/` |
+
+Split-domain Gilliom production: React at `studio.gilliomfrontlinedigital.com`, all API traffic and Stripe webhooks at `api.gilliomfrontlinedigital.com`. See [DEPLOYMENT-HANDOFF.md](./DEPLOYMENT-HANDOFF.md).
 
 ## Health check
 
@@ -123,10 +129,14 @@ Railway builds from **git** (`origin/main`), not your uncommitted local files. P
 
 1. Railway → Settings → Networking → Custom Domain.
 2. First verify the generated `*.up.railway.app` URL and `/health/` response.
-3. Assign a dedicated hostname such as `studio.example.com`; do not reuse either independent application's hostname.
-4. Set `APP_PUBLIC_URL=https://studio.example.com` and use the same origin for CORS and CSRF settings.
-5. Register `https://studio.example.com/api/v1/billing/webhook/` and store its signing secret only in Railway Variables.
+3. Assign **two** hostnames on the **same web service** when using split deploy:
+   - `studio.example.com` — browser UI
+   - `api.example.com` — REST, WebSockets, Stripe webhooks
+4. Set `APP_PUBLIC_URL=https://studio.example.com`, `STUDIO_API_URL=https://api.example.com`, and build vars `VITE_API_BASE` / `VITE_WS_BASE` (see table above). Redeploy after changing `VITE_*`.
+5. Register `https://api.example.com/api/v1/billing/webhook/` in Stripe; store `whsec_…` in `SAAS_STRIPE_WEBHOOK_SECRET`.
 6. Update `GITHUB_APP_SETUP_URL` if using GitHub App.
+
+Full cutover checklist: [DEPLOYMENT-HANDOFF.md](./DEPLOYMENT-HANDOFF.md).
 
 ## No Render
 

@@ -236,25 +236,47 @@ def _check_drift_health(project: Project) -> HealthMetric:
 
 
 def _check_webhook_health(project: Project) -> HealthMetric:
-    """Check webhook health."""
+    """Check webhook health including live delivery failure rate."""
     try:
         result = webhook_health(project)
+        delivery_stats = result.get("deliveryStats") or {}
+        signature_probe = result.get("signatureProbe") or {}
 
         if not result.get("healthy"):
             issue_count = len(result.get("issues", []))
+            high_failure = delivery_stats.get("highFailureRate")
+            sig_bad = signature_probe.get("classification") == "signature_mismatch"
+            message = f"{issue_count} webhook issue(s) detected"
+            if high_failure and delivery_stats.get("successRate") is not None:
+                message = (
+                    f"Webhook delivery success ~{delivery_stats['successRate']}% "
+                    f"({delivery_stats.get('failedDeliveries', 0)} failed)"
+                )
+            elif sig_bad:
+                message = "Webhook signing secret mismatch — live probe rejected vault whsec_"
             return HealthMetric(
                 name="webhook_health",
-                status="critical" if issue_count > 0 else "warning",
-                value={"healthy": False, "issueCount": issue_count},
-                threshold={"healthy": True},
-                message=f"{issue_count} webhook issue(s) detected",
+                status="critical",
+                value={
+                    "healthy": False,
+                    "issueCount": issue_count,
+                    "deliveryStats": delivery_stats,
+                    "signatureProbe": signature_probe,
+                    "autoRepairRecommended": result.get("autoRepairRecommended"),
+                },
+                threshold={"healthy": True, "minSuccessRate": 70},
+                message=message,
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
 
         return HealthMetric(
             name="webhook_health",
             status="healthy",
-            value={"healthy": True, "endpointCount": len(result.get("endpoints", []))},
+            value={
+                "healthy": True,
+                "endpointCount": len(result.get("endpoints", [])),
+                "deliveryStats": delivery_stats,
+            },
             threshold={"healthy": True},
             message="Webhooks healthy",
             timestamp=datetime.now(timezone.utc).isoformat(),

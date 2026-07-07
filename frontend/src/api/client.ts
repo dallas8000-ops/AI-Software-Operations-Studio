@@ -1,13 +1,45 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? "/api/v1";
+function resolveApiBase(): string {
+  const env = import.meta.env.VITE_API_BASE?.trim();
+  if (env) {
+    return env.replace(/\/$/, "");
+  }
+  return "/api/v1";
+}
+
+function resolveWsOrigin(): string {
+  const wsEnv = import.meta.env.VITE_WS_BASE?.trim();
+  if (wsEnv) {
+    return wsEnv.replace(/\/$/, "");
+  }
+  const api = import.meta.env.VITE_API_BASE?.trim();
+  if (api?.startsWith("http")) {
+    try {
+      const parsed = new URL(api);
+      parsed.protocol = parsed.protocol === "https:" ? "wss:" : "ws:";
+      parsed.pathname = "";
+      parsed.search = "";
+      parsed.hash = "";
+      return parsed.origin;
+    } catch {
+      /* fall through */
+    }
+  }
+  if (typeof window !== "undefined") {
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${proto}//${window.location.host}`;
+  }
+  return "ws://127.0.0.1:8000";
+}
+
+const API_BASE = resolveApiBase();
 
 /** Resolved API origin for UI hints (local dev vs production). */
 export function apiConnectionLabel(): string {
-  const base = import.meta.env.VITE_API_BASE ?? "/api/v1";
-  if (base.startsWith("http")) {
+  if (API_BASE.startsWith("http")) {
     try {
-      return new URL(base).host;
+      return new URL(API_BASE).host;
     } catch {
-      return base;
+      return API_BASE;
     }
   }
   if (typeof window !== "undefined") {
@@ -16,6 +48,11 @@ export function apiConnectionLabel(): string {
       : `${window.location.hostname} (unified app)`;
   }
   return "unified app";
+}
+
+/** WebSocket origin for pipeline run logs (matches API host in split deploy). */
+export function wsOrigin(): string {
+  return resolveWsOrigin();
 }
 
 export interface ApiError {
@@ -1575,6 +1612,11 @@ export const monitoringApi = {
     ),
   webhookHealth: (projectSlug: string) =>
     apiFetch<WebhookHealthResult>(`/projects/${projectSlug}/webhook-health/`),
+  repairWebhookDelivery: (projectSlug: string) =>
+    apiFetch<{ ok: boolean; repair: Record<string, unknown>; health: WebhookHealthResult }>(
+      `/projects/${projectSlug}/webhook-health/`,
+      { method: "POST", body: JSON.stringify({ action: "repair" }) }
+    ),
 };
 
 export interface DriftItem {
@@ -1589,12 +1631,31 @@ export interface WebhookHealthResult {
   endpoints: { id: string; url: string; status: string; matchesExpected: boolean | null }[];
   recentEventTypes: Record<string, number>;
   recentStripeEventCount?: number | null;
+  deliveryStats?: {
+    lookbackHours: number;
+    totalEvents: number;
+    failedDeliveries: number;
+    successRate: number | null;
+    sampleSufficient: boolean;
+    highFailureRate: boolean;
+  } | null;
+  signatureProbe?: {
+    url: string;
+    httpStatus: number | null;
+    classification: string;
+    signatureValid: boolean;
+    reachable: boolean;
+    bodySnippet?: string;
+  } | null;
   deliveryEvidence?: {
-    status: "inactive" | "activity_seen" | "unknown" | string;
+    status: "inactive" | "activity_seen" | "unknown" | "failing" | "healthy" | string;
     level: "info" | "unknown" | "warning" | "error" | string;
     recentStripeEventCount: number | null;
+    successRate?: number;
+    failedDeliveries?: number;
     message: string;
   };
-  issues: { severity: string; message: string; fix: string }[];
+  autoRepairRecommended?: boolean;
+  issues: { severity: string; message: string; fix: string; autoFixable?: boolean; fixAction?: string }[];
   healthy: boolean;
-};
+}

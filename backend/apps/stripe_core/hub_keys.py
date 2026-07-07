@@ -6,7 +6,10 @@ from typing import Any
 
 from apps.projects.models import Project
 from apps.stripe_core.portfolio_catalog import (
+    HUB_API_URL,
     HUB_SLUG,
+    HUB_WEBHOOK_PATH,
+    HUB_WEB_URL,
     catalog_by_slug,
     catalog_live_urls,
     is_stripe_exempt_slug,
@@ -85,6 +88,12 @@ def resolve_stripe_billing_urls(project: Project) -> tuple[str, str]:
 
 def resolve_web_app_url(project: Project) -> str:
     """Railway web frontend URL — billing return URL, CLIENT_URL, live demo."""
+    if project.slug == HUB_SLUG:
+        entry = catalog_by_slug(HUB_SLUG)
+        web = str((entry or {}).get("webProductionUrl") or HUB_WEB_URL).strip().rstrip("/")
+        if web:
+            return web
+
     live = catalog_live_urls(catalog_by_slug(project.slug or ""))
     if live.get("webUrl"):
         return live["webUrl"]
@@ -106,9 +115,14 @@ def resolve_demo_app_url(project: Project) -> str:
 
 
 def resolve_expected_webhook_url(project: Project) -> str:
-    """Production webhook URL for this project — never the hub URL unless slug is stripe-installer."""
+    """Production webhook URL for this project."""
     if project.slug == HUB_SLUG:
-        return f"https://stripe-installer-production.up.railway.app/api/v1/billing/webhook/"
+        entry = catalog_by_slug(HUB_SLUG)
+        api = str((entry or {}).get("productionUrl") or HUB_API_URL).rstrip("/")
+        wh_path = str((entry or {}).get("webhookPath") or HUB_WEBHOOK_PATH).strip()
+        if not wh_path.startswith("/"):
+            wh_path = f"/{wh_path}"
+        return f"{api}{wh_path}"
 
     app = portfolio_app_for_project(project)
     if app and app.webhook_url:

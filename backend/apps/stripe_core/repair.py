@@ -189,6 +189,23 @@ def run_repair_action(
         return _provision_stripe(project, root, app_url)
     if action == "normalize-webhook-url":
         return _normalize_webhook_url(project, root)
+    if action == "repair-webhook-delivery":
+        from apps.stripe_core.webhook_delivery import auto_repair_webhook_delivery
+
+        result = auto_repair_webhook_delivery(project)
+        if result.get("skipped"):
+            return RepairResult("repair-webhook-delivery", True, result.get("message", "No repair needed"))
+        if result.get("ok"):
+            return RepairResult(
+                "repair-webhook-delivery",
+                True,
+                f"Webhook delivery repaired ({result.get('repairReason') or 'synced'})",
+            )
+        return RepairResult(
+            "repair-webhook-delivery",
+            False,
+            str((result.get("repair") or {}).get("message") or "Webhook delivery repair failed"),
+        )
     return RepairResult(action, False, f"Unknown action: {action}")
 
 

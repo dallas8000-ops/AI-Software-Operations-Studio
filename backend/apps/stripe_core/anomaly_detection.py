@@ -65,47 +65,73 @@ def _detect_webhook_failure_anomalies(project: Project) -> list[Anomaly]:
         return anomalies
 
     try:
+        from apps.stripe_core.webhook_delivery import assess_webhook_delivery
+
+        assessment = assess_webhook_delivery(project)
+        stats = assessment.deliveryStats
+        probe = assessment.signatureProbe
+
+        if stats and stats.highFailureRate and stats.successRate is not None:
+            failure_rate = 1.0 - stats.successRate
+            anomalies.append(
+                Anomaly(
+                    type="webhook_delivery_failure_rate",
+                    severity="high" if failure_rate > 0.5 else "medium",
+                    description=(
+                        f"Stripe webhook delivery failing ~{failure_rate:.0%} "
+                        f"({stats.failedDeliveries}/{stats.totalEvents} in {stats.lookbackHours}h)"
+                    ),
+                    metric="delivery_failure_rate",
+                    value=failure_rate,
+                    expected_range=(0.0, 0.1),
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                )
+            )
+
+        if probe and probe.classification == "signature_mismatch":
+            anomalies.append(
+                Anomaly(
+                    type="webhook_signature_mismatch",
+                    severity="high",
+                    description="Vault webhook secret rejected by live endpoint",
+                    metric="signature_probe",
+                    value=probe.classification,
+                    expected_range=("ok", "ok"),
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                )
+            )
+
         stripe.api_key = secret
 
-        # Get recent events
-        events = stripe.Event.list(limit=100, created={"gt": int((datetime.now(timezone.utc) - timedelta(hours=24)).timestamp())})
+        # Get recent events for payment-pattern anomalies
+        events = stripe.Event.list(
+            limit=100,
+            created={"gt": int((datetime.now(timezone.utc) - timedelta(hours=24)).timestamp())},
+        )
 
-        # Analyze event types
         event_counts = defaultdict(int)
         for event in events.data:
             event_counts[event.type] += 1
 
-        # Check for unusual patterns
         total_events = len(events.data)
         if total_events > 0:
-            # Check for high failure rate
-            failure_events = sum(count for typ, count in event_counts.items() if "failed" in typ.lower() or "error" in typ.lower())
+            failure_events = sum(
+                count for typ, count in event_counts.items() if "failed" in typ.lower() or "error" in typ.lower()
+            )
             failure_rate = failure_events / total_events
 
-            if failure_rate > 0.1:  # More than 10% failures
-                anomalies.append(Anomaly(
-                    type="webhook_failure_rate",
-                    severity="high" if failure_rate > 0.25 else "medium",
-                    description=f"High webhook failure rate detected: {failure_rate:.1%}",
-                    metric="failure_rate",
-                    value=failure_rate,
-                    expected_range=(0.0, 0.1),
-                    timestamp=datetime.now(timezone.utc).isoformat(),
-                ))
-
-            # Check for missing expected events
-            expected_events = ["checkout.session.completed", "customer.subscription.created", "invoice.paid"]
-            for expected in expected_events:
-                if expected not in event_counts and total_events > 20:
-                    anomalies.append(Anomaly(
-                        type="missing_expected_event",
-                        severity="medium",
-                        description=f"Expected event type not detected: {expected}",
-                        metric="event_type_presence",
-                        value=False,
-                        expected_range=(True, True),
+            if failure_rate > 0.1:
+                anomalies.append(
+                    Anomaly(
+                        type="webhook_failure_rate",
+                        severity="high" if failure_rate > 0.25 else "medium",
+                        description=f"High account event failure rate detected: {failure_rate:.1%}",
+                        metric="failure_rate",
+                        value=failure_rate,
+                        expected_range=(0.0, 0.1),
                         timestamp=datetime.now(timezone.utc).isoformat(),
-                    ))
+                    )
+                )
 
     except Exception:
         pass

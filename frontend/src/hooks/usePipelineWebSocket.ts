@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { wsOrigin } from "../api/client";
 
 export interface PipelineEvent {
   step: string;
@@ -16,9 +17,7 @@ interface WsMessage {
 }
 
 function wsBase(): string {
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
-  return `${proto}//${host}`;
+  return wsOrigin();
 }
 
 export function usePipelineWebSocket(runId: string | null) {

@@ -8,6 +8,10 @@
 
 FROM node:20-alpine AS frontend
 WORKDIR /app/frontend
+ARG VITE_API_BASE=
+ARG VITE_WS_BASE=
+ENV VITE_API_BASE=$VITE_API_BASE \
+    VITE_WS_BASE=$VITE_WS_BASE
 # Railway injects NODE_ENV=production during builds — devDeps (typescript, vite) are required.
 ENV NODE_ENV=development \
     NPM_CONFIG_PRODUCTION=false
