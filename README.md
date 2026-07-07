@@ -53,6 +53,7 @@ All three may use one Stripe account. Distinguish them with separate Products an
 | Railway project | `hearty-enjoyment` |
 | Web service | `operations-studio-web` - deployed successfully |
 | Canonical URL | [studio.gilliomfrontlinedigital.com](https://studio.gilliomfrontlinedigital.com) |
+| API + webhooks (split domain) | [api.gilliomfrontlinedigital.com](https://api.gilliomfrontlinedigital.com) — attach in Railway when ready; catalog + backend already target this host |
 | Railway fallback | [operations-studio-web-production-d4ad.up.railway.app](https://operations-studio-web-production-d4ad.up.railway.app) |
 | Health endpoint | [Live health](https://studio.gilliomfrontlinedigital.com/health/) |
 | PostgreSQL | Dedicated `Postgres-V92Q` service connected; health passing |
@@ -61,7 +62,8 @@ All three may use one Stripe account. Distinguish them with separate Products an
 | Beat scheduler | `operations-studio-beat` deployed and healthy |
 | Studio billing | Active Product; Starter $9/month; Pro $79/month; Enterprise contact sales |
 | Stripe API key | Dedicated live restricted key verified for the six minimum runtime permissions |
-| Stripe webhook | Studio-specific endpoint enabled for six billing/subscription events; unsigned requests rejected |
+| Stripe webhook | Studio SaaS billing at `https://api.gilliomfrontlinedigital.com/api/v1/billing/webhook/` (catalog target); live deploy may still use same-origin `studio.*` until `VITE_API_BASE` rebuild |
+| Webhook monitoring | Delivery stats from Stripe, signed live probe, **Auto-repair webhook** in Monitoring + `python scripts/run_webhook_auto_repair.py` |
 | Custom domain | `studio.gilliomfrontlinedigital.com` active with valid Railway TLS certificate |
 
 The existing Specwright and Deployment-Stripe-center Railway services were not changed during this deployment.
@@ -106,6 +108,8 @@ This repo merges the former **Stripe Installer** and **API Transfer** products i
 | [docs/CUTOVER.md](docs/CUTOVER.md) | Retire old production apps |
 | [docs/MERGE-STATUS.md](docs/MERGE-STATUS.md) | Cutover checklist (live) |
 | [docs/RAILWAY.md](docs/RAILWAY.md) | Railway deploy + vault key |
+| [docs/DEPLOYMENT-HANDOFF.md](docs/DEPLOYMENT-HANDOFF.md) | Production cutover, split domains, operator runbook |
+| [docs/DEMO-SCRIPT.md](docs/DEMO-SCRIPT.md) | 3–5 min stakeholder demo script |
 | [docs/GO-LIVE.md](docs/GO-LIVE.md) | Client project → production |
 | [docs/PRODUCTION.md](docs/PRODUCTION.md) | Docker prod stack |
 | [backend/apps/api_transfer/README.md](backend/apps/api_transfer/README.md) | Transfer API reference |
@@ -202,7 +206,7 @@ Version 2 connects the mature automation modules through an account-wide Operati
 | **Git** | Clone (sync/async), private repo auth (token/SSH/credentials), GitHub PR |
 | **Ops** | Docker prod stack, health checks, `check:prod`, `deploy:prod`, GitHub Actions CI, CLI |
 | **AI copilot** | Fix copilot, NL→config, readiness coach, handoff pack, catalog strategist, webhook incident |
-| **Monitoring** | Catalog drift (Celery Beat), webhook health, re-sync, audit log |
+| **Monitoring** | Catalog drift (Celery Beat), webhook delivery stats + auto-repair, re-sync, audit log |
 | **Portfolio audit** | Account-wide webhook probe + local report (`~/.stripe-installer/reports/`) — [docs/PORTFOLIO-AUDIT.md](docs/PORTFOLIO-AUDIT.md) |
 | **Environments** | Test / staging / production URLs in `deploy.config.json`, per-project selector |
 | **Agency** | Organizations, RBAC, **email invites** (register link → auto-join), shared projects |
@@ -329,13 +333,23 @@ Full route list: [backend/apps/api_transfer/README.md](backend/apps/api_transfer
 
 ### Railway (Gilliom production)
 
+Split-domain layout (recommended):
+
+| Host | Role |
+|------|------|
+| `studio.gilliomfrontlinedigital.com` | React UI (`APP_PUBLIC_URL`) |
+| `api.gilliomfrontlinedigital.com` | REST API, WebSockets, SaaS billing webhook (`STUDIO_API_URL`) |
+
 1. Attach **PostgreSQL** plugin → `DATABASE_URL` auto-set.
 2. Set **`VAULT_MASTER_KEY`** (64-char hex) — pin once, never rotate without `rotate_vault_key`.
-3. Set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=false`, Stripe keys (`STRIPE_*` or `SAAS_STRIPE_*`).
-4. Custom domain: Railway → Networking → `stripe-installer.gilliomfrontlinedigital.com` (sets `RAILWAY_PUBLIC_DOMAIN`, drives `APP_PUBLIC_URL` + CORS).
-5. Stripe webhook (live): `https://<your-domain>/api/v1/billing/webhook/`
+3. Set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=false`, Stripe keys (`SAAS_STRIPE_*`).
+4. Custom domains on the **web service**: `studio.*` (UI) and `api.*` (API/webhooks) when ready.
+5. Build vars for split frontend (redeploy after change): `VITE_API_BASE=https://api.gilliomfrontlinedigital.com/api/v1`, `VITE_WS_BASE=wss://api.gilliomfrontlinedigital.com`.
+6. Stripe webhook (SaaS billing): `https://api.gilliomfrontlinedigital.com/api/v1/billing/webhook/`
 
-Details: [docs/RAILWAY.md](docs/RAILWAY.md)
+Until step 4–5 are complete, production continues on unified routing (`studio.*` + `/api/v1`).
+
+Details: [docs/RAILWAY.md](docs/RAILWAY.md) · [docs/DEPLOYMENT-HANDOFF.md](docs/DEPLOYMENT-HANDOFF.md)
 
 ### Docker / self-hosted
 
@@ -359,7 +373,7 @@ Allowed apps for transfer/deploy linking live at:
 
 Template in code: `backend/apps/stripe_core/portfolio_registry.py` (`EXAMPLE_REGISTRY`).
 
-Current production entry: **`automation-center`** → `https://stripe-installer.gilliomfrontlinedigital.com`
+Current production hub entry: **`automation-center`** → web `https://studio.gilliomfrontlinedigital.com`, API/webhooks `https://api.gilliomfrontlinedigital.com`
 
 ---
 
@@ -469,6 +483,7 @@ npm run smoke
 npm run check:prod              # fails in dev mode — expected
 cd frontend; npm run build
 cd backend; python manage.py verify_cutover
+python scripts/run_webhook_auto_repair.py stripe-installer
 ```
 
 ---
