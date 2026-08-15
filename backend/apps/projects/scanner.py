@@ -17,6 +17,7 @@ FRAMEWORK_SIGNALS: dict[str, list[str]] = {
     "sveltekit": ["svelte.config", "@sveltejs/kit"],
     "django": ["manage.py", "settings.py"],
     "flask": ["flask", "app.py"],
+    "fastapi": ["from fastapi import", "FastAPI(", "uvicorn"],
     "rails": ["config/routes.rb", "Gemfile"],
     "laravel": ["artisan", "composer.json"],
 }
@@ -191,6 +192,12 @@ class ProjectScanner:
             return "fastify"
         if self._file_exists("manage.py"):
             return "django"
+        if any(
+            "fastapi" in (self._read_file(source) or "").lower()
+            for source in source_files
+            if source.endswith(".py")
+        ):
+            return "fastapi"
         if self._file_exists("config/routes.rb"):
             return "rails"
         if self._file_exists("artisan"):
@@ -207,7 +214,7 @@ class ProjectScanner:
         return "unknown"
 
     def _detect_language(self, package_json: dict | None, source_files: list[str], framework: str = "unknown") -> str:
-        if framework == "django":
+        if framework in ("django", "fastapi", "flask"):
             return "python"
         if any(f.endswith((".ts", ".tsx")) for f in source_files):
             return "typescript"

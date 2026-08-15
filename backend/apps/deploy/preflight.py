@@ -70,17 +70,27 @@ def run_deploy_preflight(
 
     platform = _resolve_platform(project, root)
     stripe_exempt = is_stripe_exempt_slug(project.slug)
+    preset = preset_for_project(project)
 
     if provision_stripe and not stripe_exempt and not get_secret(project, "STRIPE_SECRET_KEY"):
         issues.append("STRIPE_SECRET_KEY missing from vault — add keys or pull from Automation Center hub")
 
     if provision_postgres and platform == "railway":
-        preset = preset_for_project(project)
         if preset == "agripay-logistics-ai":
             if not get_secret(project, "SECRET_KEY") and not get_secret(project, "DJANGO_SECRET_KEY"):
                 warnings.append("SECRET_KEY missing — required for AgriPay on Railway")
         elif preset and not get_secret(project, "DJANGO_SECRET_KEY"):
             warnings.append("DJANGO_SECRET_KEY missing — required for Django apps on Railway")
+
+    if platform == "railway" and preset == "ai-memory-engine":
+        if not get_secret(project, "MEMORY_API_KEY"):
+            issues.append("MEMORY_API_KEY missing from vault — run Studio automation to generate it")
+        volume_confirmed = (get_secret(project, "MEMORY_RAILWAY_VOLUME_CONFIRMED") or "").strip().lower()
+        if volume_confirmed != "true":
+            issues.append(
+                "Railway Volume confirmation required: mount a Volume at /data, then store "
+                "MEMORY_RAILWAY_VOLUME_CONFIRMED=true in the project vault"
+            )
 
     if push_railway_env and platform == "railway":
         token = (get_secret(project, "RAILWAY_API_TOKEN") or "").strip()

@@ -14,6 +14,7 @@ from apps.stripe_core.secret_placement import (
 )
 from .setup_hub import (
     audit_stripe_account,
+    is_ai_memory_engine_project,
     register_webhooks_for_user,
     reset_workspace,
     setup_hub_status,
@@ -43,6 +44,18 @@ class SetupHubActionView(ProjectOwnedMixin, APIView):
         project = self.get_project(project_slug, min_role="admin")
         action = (request.data.get("action") or "").strip().lower()
         dry_run = bool(request.data.get("dryRun") or request.data.get("dry_run"))
+
+        if is_ai_memory_engine_project(project) and action in {
+            "reset",
+            "audit",
+            "register_webhooks",
+            "sync_registry",
+            "sync_vault",
+        }:
+            return Response(
+                {"error": "This action is for Stripe billing projects and is not applicable to AI Memory Engine."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             if action == "audit_secrets":

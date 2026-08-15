@@ -2,7 +2,7 @@
 
 Platform: **railway**
 Framework: **django**
-Production URL: https://stripe-installer-production.up.railway.app
+Production URL: https://studio.gilliomfrontlinedigital.com
 
 ## Pre-deploy checklist
 1. Run readiness — aim for 80+ score
@@ -13,7 +13,7 @@ Production URL: https://stripe-installer-production.up.railway.app
 ## Environment variables
 ```
 NODE_ENV=production
-APP_URL=https://stripe-installer-production.up.railway.app
+APP_PUBLIC_URL=https://studio.gilliomfrontlinedigital.com
 STRIPE_SECRET_KEY=sk_live_
 STRIPE_PUBLISHABLE_KEY=pk_live_
 STRIPE_WEBHOOK_SECRET=whsec_
@@ -26,7 +26,7 @@ railway up
 ```
 
 ## Post-deploy
-1. Verify SSL: https://stripe-installer-production.up.railway.app
-2. Test health: https://stripe-installer-production.up.railway.app/stripe/health
+1. Verify SSL: https://studio.gilliomfrontlinedigital.com
+2. Test health: https://studio.gilliomfrontlinedigital.com/health/
 3. Register production Stripe webhook
 4. Schedule backups: scripts/backup-db.sh

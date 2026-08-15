@@ -182,6 +182,7 @@ export default function SetupHubPanel({
   }
 
   const mode = status?.verification?.secretKey?.mode;
+  const isMemoryEngine = status?.appProfile === "ai-memory-engine";
 
   return (
     <section className="card setup-hub-card">
@@ -189,9 +190,9 @@ export default function SetupHubPanel({
         <div>
           <h2>Setup Hub</h2>
           <p className="muted">
-            One place to rename, reset, scan Stripe, register webhooks, and run the full pipeline — no CLI required.
-            Run full setup automatically runs platform bootstrap on the hub (pins master key, syncs and
-            pushes env vars to Railway projects) before the pipeline — no separate button required.
+            {isMemoryEngine
+              ? "FastAPI and Railway setup for the AI Memory Engine. Studio secures the service key, validates persistent storage, resolves Railway targets, and pushes deployment configuration."
+              : "One place to rename, reset, scan Stripe, register webhooks, and run the full pipeline — no CLI required. Run full setup automatically runs platform bootstrap on the hub (pins master key, syncs and pushes env vars to Railway projects) before the pipeline — no separate button required."}
           </p>
         </div>
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refresh()} disabled={loading}>
@@ -205,11 +206,13 @@ export default function SetupHubPanel({
       {status && !status.isHubProject && (
         <div className="alert">
           Stripe keys are pulled automatically from <strong>Operations Studio</strong> when you open this page,
-          verify, or run setup. Expected webhook URL is for <strong>{status.projectName}</strong>, not the hub.
+          {isMemoryEngine
+            ? " and remain available for this project. Railway deploy readiness is tracked separately from Stripe setup."
+            : <>verify, or run setup. Expected webhook URL is for <strong>{status.projectName}</strong>, not the hub.</>}
         </div>
       )}
 
-      {status?.portfolioSummary && (
+      {status?.portfolioSummary && !isMemoryEngine && (
         <div className="setup-meta muted">
           <p>
             Portfolio: <strong>{status.portfolioSummary.stripeBillingCount}</strong> Stripe billing apps in registry.
@@ -219,7 +222,7 @@ export default function SetupHubPanel({
         </div>
       )}
 
-      {status?.stripeExempt && (
+      {status?.stripeExempt && !isMemoryEngine && (
         <div className="alert">
           This project is <strong>Stripe exempt</strong> — portfolio demo only, no subscription billing or webhooks
           required.
@@ -358,7 +361,7 @@ export default function SetupHubPanel({
             Clear vault secrets when resetting (start fresh)
           </label>
 
-          {status?.lastPortfolioAuditRegistryGaps && status.lastPortfolioAuditRegistryGaps.length > 0 && (
+          {!isMemoryEngine && status?.lastPortfolioAuditRegistryGaps && status.lastPortfolioAuditRegistryGaps.length > 0 && (
             <div className="alert alert-error">
               <strong>
                 {status.isHubProject ? "Missing Stripe webhooks (portfolio)" : "Stripe webhook gap"}

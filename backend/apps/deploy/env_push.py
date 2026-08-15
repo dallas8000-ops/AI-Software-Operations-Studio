@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import secrets
 import urllib.error
 import urllib.request
 from typing import Any
@@ -80,16 +81,25 @@ AGRIPAY_VAULT_KEYS = [
     "STRIPE_WEBHOOK_SECRET",
 ]
 
+# AI Memory Engine — FastAPI + Deep Lake. /data must be a Railway Volume mount.
+AI_MEMORY_ENGINE_PRESET: dict[str, str] = {
+    "MEMORY_DATA_PATH": "/data/memories",
+}
+
+AI_MEMORY_ENGINE_VAULT_KEYS = ["MEMORY_API_KEY"]
+
 ENV_PRESETS: dict[str, dict[str, str]] = {
     "kistie-store": KISTIE_STORE_PRESET,
     "silverfox": SILVERFOX_PRESET,
     "agripay-logistics-ai": AGRIPAY_PRESET,
+    "ai-memory-engine": AI_MEMORY_ENGINE_PRESET,
 }
 
 PRESET_VAULT_KEYS: dict[str, list[str]] = {
     "kistie-store": KISTIE_STORE_VAULT_KEYS,
     "silverfox": SILVERFOX_VAULT_KEYS,
     "agripay-logistics-ai": AGRIPAY_VAULT_KEYS,
+    "ai-memory-engine": AI_MEMORY_ENGINE_VAULT_KEYS,
 }
 
 VAULT_KEY_ALIASES: dict[str, dict[str, str]] = {
@@ -321,6 +331,64 @@ def build_env_var_payload(
     if preset_vars and vault_vars:
         vault_vars = _apply_vault_overrides(preset_vars, vault_vars)
     return merge_env_vars(preset=preset_vars or None, vault=vault_vars or None, inline=variables)
+
+
+def ensure_ai_memory_engine_api_key(project: Project) -> bool:
+    """Generate the engine's service key once and keep it encrypted in the project vault."""
+    if (project.slug or "").strip().lower() != "ai-memory-engine":
+        return False
+    if get_secret(project, "MEMORY_API_KEY"):
+        return False
+    set_secret(project, "MEMORY_API_KEY", secrets.token_urlsafe(32))
+    return True
+
+
+def ensure_ai_memory_engine_railway_volume(
+    project: Project,
+    *,
+    project_id: str,
+    service_id: str,
+    environment_id: str | None = None,
+) -> dict[str, Any]:
+    """Create the persistent Deep Lake mount required by the AI Memory Engine."""
+    if (project.slug or "").strip().lower() != "ai-memory-engine":
+        return {"required": False, "created": False}
+
+    token = (get_secret(project, "RAILWAY_API_TOKEN") or "").strip()
+    if not token:
+        raise RuntimeError("RAILWAY_API_TOKEN not in vault")
+    environment_id = environment_id or _railway_environment_id(token, project_id)
+    try:
+        _railway_gql(
+            token,
+            """
+            mutation($input: VolumeCreateInput!) {
+                            volumeCreate(input: $input) { id }
+            }
+            """,
+            {
+                "input": {
+                    "projectId": project_id,
+                    "serviceId": service_id,
+                    "environmentId": environment_id,
+                    "mountPath": "/data",
+                }
+            },
+        )
+        created = True
+    except RuntimeError as exc:
+        message = str(exc).lower()
+        if not any(marker in message for marker in ("already", "exists", "mount path")):
+            raise
+        created = False
+
+    set_secret(project, "MEMORY_RAILWAY_VOLUME_CONFIRMED", "true")
+    return {
+        "required": True,
+        "created": created,
+        "mountPath": "/data",
+        "environmentId": environment_id,
+    }
 
 
 def push_vault_env_to_platform(
@@ -587,6 +655,12 @@ def auto_push_railway_env(
             "the web service name matches the project (not Postgres)."
         )
 
+    volume_result = ensure_ai_memory_engine_railway_volume(
+        project,
+        project_id=resolved_project_id,
+        service_id=resolved_service_id,
+    )
+
     from apps.projects.scan_data_utils import update_project_scan_data
     from .railway_postgres import postgres_reference_for_preset
 
@@ -621,6 +695,8 @@ def auto_push_railway_env(
 
     result["projectId"] = resolved_project_id
     result["serviceId"] = resolved_service_id
+    if volume_result.get("required"):
+        result["volume"] = volume_result
 
     try:
         from .railway_deploy import ensure_railway_github_and_deploy

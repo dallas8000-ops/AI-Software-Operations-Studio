@@ -69,11 +69,13 @@ def health_check_path(framework: str) -> str:
         return "/api/health"
     if framework == "django":
         return "/health/"
+    if framework == "fastapi":
+        return "/health"
     return "/stripe/health"
 
 
 def framework_build_command(framework: str) -> str:
-    if framework in ("django", "flask"):
+    if framework in ("django", "flask", "fastapi"):
         return "pip install -r requirements.txt"
     if framework == "rails":
         return "bundle install"
@@ -91,6 +93,7 @@ def framework_start_command(framework: str) -> str:
         "react": "node dist/server.js",
         "django": "gunicorn myproject.wsgi:application --bind 0.0.0.0:$PORT",
         "flask": "gunicorn app:app --bind 0.0.0.0:$PORT",
+        "fastapi": "uvicorn server:app --host 0.0.0.0 --port $PORT",
         "rails": "bundle exec rails server -p $PORT -e production",
         "laravel": "php artisan serve --host=0.0.0.0 --port=$PORT",
     }.get(framework, "npm start")

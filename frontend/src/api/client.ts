@@ -969,6 +969,7 @@ export interface SetupHubStep {
 export interface SetupHubStatus {
   projectSlug: string;
   projectName: string;
+  appProfile?: "ai-memory-engine";
   vaultHealth: {
     unreadableCount: number;
     totalCount: number;

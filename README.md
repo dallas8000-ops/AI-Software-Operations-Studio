@@ -12,6 +12,31 @@ Secrets are write-only from the browser, encrypted server-side, masked in API re
 
 Version 2.0 is the current production release. This README now documents the merged Operations Center experience, while the Version 1 launch and cutover details remain as historical deployment context.
 
+## What Studio Does
+
+Studio is an operations control plane for software projects. It provides account login and MFA, personal and organization workspaces with role-based access, an encrypted per-project vault, repository scanning, readiness and quality reporting, run history, guarded deployment preparation, provider migration workflows, billing, and operational reporting. The React application is served by Django; project secrets remain server-side and are masked in all normal API responses.
+
+The primary workflows are:
+
+- **Project operations:** create or import a project, connect a repository and local workspace, scan its stack, manage environments, archive or restore it, and retain audit evidence.
+- **Secure configuration:** write provider credentials to the encrypted vault, inspect only masked status, import supported environment keys, and use vault secrets for server-side automation.
+- **Stripe and billing:** verify project Stripe credentials, provision supported Stripe catalog resources, generate integration code, monitor webhooks, run diagnostics, and manage Studio subscription billing.
+- **Deployment and reliability:** build readiness reports, generate deployment artifacts, prepare provider migrations, push approved Railway configuration, track pipeline runs, and use health, drift, webhook, backup, and recovery tools.
+- **Teams and automation:** manage organizations and roles, invite members, connect GitHub, inspect CI status, generate a GitHub Actions readiness workflow, and expose a project-scoped CI readiness endpoint.
+- **AI assistance:** provide secret-free diagnostics, readiness coaching, configuration guidance, and handoff material. AI context excludes vault values.
+
+### Automated Keys
+
+Studio handles several distinct key types. It never claims to create provider dashboard credentials, such as Stripe secret keys, GitHub tokens, Neon keys, or Railway tokens; those are created by their respective providers and stored in the project vault by an authorized user.
+
+| Key type | How it is created | Storage and use |
+|---|---|---|
+| Project CI key (`si_...`) | An authorized project administrator selects **Create CI API key** in the CI gate. Studio generates it with Python's cryptographic random source. | Only the SHA-256 hash and a short prefix are stored. The full key is displayed once, then belongs in the GitHub repository's `STRIPE_INSTALLER_API_KEY` secret. It authorizes only that project's `POST /api/v1/ci/readiness/` call. Administrators can revoke it at any time. |
+| License key | A verified `checkout.session.completed` billing event with a subscription and domain metadata automatically creates a license. | The key is tied to subscription, customer email, registered domain, status, and instance limit. Subscription deletion revokes it. Deployed instances validate it with `POST /api/v1/license/validate/`. |
+| Vault and provider secrets | Created outside Studio by the provider or platform operator. | Stored encrypted in the per-project vault or Railway Variables, never returned as plaintext through normal Studio APIs. |
+
+For CI setup, create the project key in the project workspace, save it immediately, and configure the repository secrets `STRIPE_INSTALLER_URL`, `STRIPE_INSTALLER_PROJECT`, and `STRIPE_INSTALLER_API_KEY`. Studio can display the corresponding GitHub Actions workflow. Do not create CI keys automatically during project creation: a secret that can only be displayed once must be intentionally retrieved and placed in the destination secret store by an authorized administrator.
+
 ## Build status and release attribution
 
 | Build | App attribution | Status |

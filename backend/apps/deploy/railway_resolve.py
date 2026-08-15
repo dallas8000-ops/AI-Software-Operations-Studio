@@ -20,6 +20,7 @@ def preset_for_project(project: Project) -> str | None:
     aliases = {
         "kistie_store": "kistie-store",
         "kistie": "kistie-store",
+        "ai_memory_engine": "ai-memory-engine",
     }
     preset = aliases.get(slug, slug)
     return preset if preset in ENV_PRESETS else None

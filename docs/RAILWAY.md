@@ -15,6 +15,21 @@ Recommended Studio service names:
 
 Single-container deploy using the repo `Dockerfile` and `railway.toml` is legacy — set `ALLOW_SINGLE_CONTAINER=true` only if you are not using Redis yet.
 
+## AI Memory Engine via Studio
+
+Studio recognizes the `ai-memory-engine` project as a **FastAPI** application, not a generic project. Its Railway profile uses the repository's Nixpacks manifest, installs `requirements.txt`, starts `python server.py`, and checks `GET /health`.
+
+In the AI Memory Engine project workspace, run **Automate platform setup**. Studio then:
+
+1. Re-scans the repository as FastAPI and records Railway as its deployment platform.
+2. Generates `MEMORY_API_KEY` when it is missing and stores it encrypted in the project vault; the raw value is not displayed or logged.
+3. Pushes `MEMORY_API_KEY` and `MEMORY_DATA_PATH=/data/memories` to the resolved Railway web service.
+4. Connects the GitHub repository and triggers deployment when the Railway token and service target are available.
+
+Before Studio will deploy the project, create a Railway **Volume** and mount it at `/data`. This is the only required dashboard action because a service environment-variable API cannot create or verify a Railway Volume mount. After mounting it, store `MEMORY_RAILWAY_VOLUME_CONFIRMED=true` in the AI Memory Engine project vault. The preflight deliberately blocks deployment until this confirmation is present: running Deep Lake at the container's default filesystem would lose stored memories on replacement.
+
+Store `RAILWAY_API_TOKEN` in the project's encrypted vault, or in the Studio hub vault for shared automation. If automatic discovery cannot resolve the target, add `RAILWAY_PROJECT_ID` and the web service's `RAILWAY_SERVICE_ID` to that same vault. After deployment, validate `https://<memory-engine-domain>/health`; non-health API calls require `X-API-Key: <MEMORY_API_KEY>`.
+
 ## Required Railway variables
 
 Set these in **Railway → your service → Variables** (not only in local `backend/.env`):

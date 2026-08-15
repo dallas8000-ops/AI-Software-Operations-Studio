@@ -7,6 +7,7 @@ from unittest.mock import patch
 from apps.projects.models import Project
 from apps.stripe_core.hub_keys import HUB_SLUG
 from apps.stripe_core.setup_hub import _persist_portfolio_audit, setup_hub_status
+from apps.vault.models import set_secret
 
 
 class SetupHubAuditStorageTests(TestCase):
@@ -83,3 +84,21 @@ class SetupHubAuditStorageTests(TestCase):
         status = setup_hub_status(self.child, user=self.user)
         self.assertEqual(len(status["lastPortfolioAuditRegistryGaps"]), 0)
         self.assertEqual(len(status["projectPortfolioGaps"]), 0)
+
+    def test_ai_memory_engine_uses_its_own_setup_profile(self):
+        project = Project.objects.create(
+            owner=self.user,
+            slug="ai-memory-engine",
+            name="AI Memory Engine",
+            framework="fastapi",
+        )
+        set_secret(project, "MEMORY_API_KEY", "test-memory-api-key")
+        set_secret(project, "MEMORY_RAILWAY_VOLUME_CONFIRMED", "true")
+
+        status = setup_hub_status(project, user=self.user)
+
+        self.assertEqual(status["appProfile"], "ai-memory-engine")
+        self.assertTrue(status["steps"][0]["ok"])
+        self.assertTrue(status["steps"][1]["ok"])
+        self.assertTrue(status["steps"][2]["ok"])
+        self.assertNotIn("webhook", {step["id"] for step in status["steps"]})

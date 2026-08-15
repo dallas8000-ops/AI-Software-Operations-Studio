@@ -268,12 +268,22 @@ def automate_project_deploy(project: Project, *, user=None) -> dict[str, Any]:
     hydrate vault, sync platform metadata, pull hub keys, push Railway env vars.
     """
     from apps.deploy.preflight import run_deploy_preflight
+    from apps.deploy.env_push import ensure_ai_memory_engine_api_key
     from apps.deploy.railway_resolve import preset_for_project
 
     prep = prepare_project_automation(project, user=user)
     steps: list[dict[str, Any]] = [
         {"step": s["step"], "ok": True, "detail": s["detail"]} for s in prep["steps"]
     ]
+
+    if ensure_ai_memory_engine_api_key(project):
+        steps.append(
+            {
+                "step": "memory_api_key",
+                "ok": True,
+                "detail": "Generated and encrypted MEMORY_API_KEY for Railway deployment",
+            }
+        )
 
     preflight = run_deploy_preflight(
         project,
