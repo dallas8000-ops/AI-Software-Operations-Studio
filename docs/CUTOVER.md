@@ -285,9 +285,9 @@ Also documented in `FrontlineDigital/DevCollective/README.md` (Live Demo table).
 
 In **Porkbun → gilliomfrontlinedigital.com → DNS**:
 
-| Record | Typical target | Purpose |
-|--------|----------------|---------|
-| `@` / `www` | `frontlinedigital-1-production.up.railway.app` (CNAME/ALIAS) | Portfolio site |
+Use [PORKBUN-DNS-RESTORE.md](PORKBUN-DNS-RESTORE.md) for the current record
+values, stale-record cleanup list, and verification checklist. Always use the
+custom-domain edge target shown by Railway, not the service's public URL.
 
 If the portfolio returns **502**, attach the custom domain to **FrontLineDigital-1** in Railway (not a crashed duplicate service). See `FrontlineDigital/DevCollective/README.md` deployment section.
 
