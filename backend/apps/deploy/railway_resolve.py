@@ -11,7 +11,7 @@ from apps.projects.scan_data_utils import update_project_scan_data
 from apps.stripe_core.portfolio_catalog import catalog_by_slug
 from apps.vault.models import get_secret, set_secret
 
-from .env_push import ENV_PRESETS, _railway_gql
+from .env_push import ENV_PRESETS, _railway_environment_id, _railway_gql
 from .provision import _sanitize_name
 
 
@@ -394,6 +394,42 @@ def sync_production_url_from_railway(
             )
             return url
     return None
+
+
+def ensure_railway_public_domain(
+    project: Project,
+    token: str,
+    project_id: str,
+    service_id: str,
+    environment_id: str | None = None,
+) -> str:
+    """Return the service URL, creating a Railway-provided domain when missing."""
+    hosts = _service_public_hosts(token, project_id, service_id)
+    if hosts:
+        hostname = sorted(hosts)[0]
+    else:
+        resolved_environment_id = environment_id or _railway_environment_id(token, project_id)
+        data = _railway_gql(
+            token,
+            """
+            mutation($input: ServiceDomainCreateInput!) {
+              serviceDomainCreate(input: $input) { domain }
+            }
+            """,
+            {
+                "input": {
+                    "serviceId": service_id,
+                    "environmentId": resolved_environment_id,
+                }
+            },
+        )
+        hostname = str((data.get("serviceDomainCreate") or {}).get("domain") or "").strip()
+        if not hostname:
+            raise RuntimeError("Railway did not return a public domain for the web service")
+
+    url = f"https://{hostname.lstrip('https://').lstrip('http://')}"
+    update_project_scan_data(project, {"productionUrl": url, "production_url": url})
+    return url
 
 
 def remember_railway_targets(

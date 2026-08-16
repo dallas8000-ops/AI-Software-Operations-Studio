@@ -613,11 +613,11 @@ def auto_push_railway_env(
 
     from .railway_resolve import (
         _list_railway_projects,
+        ensure_railway_public_domain,
         preset_for_project,
         remember_railway_targets,
         resolve_railway_project_id,
         resolve_railway_web_service_id,
-        sync_production_url_from_railway,
     )
 
     token = get_secret(project, "RAILWAY_API_TOKEN")
@@ -679,8 +679,12 @@ def auto_push_railway_env(
     )
     remember_railway_targets(project, resolved_project_id, resolved_service_id)
 
-    sync_production_url_from_railway(
-        project, token, resolved_project_id, resolved_service_id
+    public_url = ensure_railway_public_domain(
+        project,
+        token,
+        resolved_project_id,
+        resolved_service_id,
+        result.get("environmentId"),
     )
 
     update_project_scan_data(
@@ -695,6 +699,7 @@ def auto_push_railway_env(
 
     result["projectId"] = resolved_project_id
     result["serviceId"] = resolved_service_id
+    result["publicUrl"] = public_url
     if volume_result.get("required"):
         result["volume"] = volume_result
 

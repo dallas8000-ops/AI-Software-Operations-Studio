@@ -306,6 +306,8 @@ def automate_project_deploy(project: Project, *, user=None) -> dict[str, Any]:
                 detail += f"; deploy {deploy.get('deploymentId')}"
             elif not deploy.get("currentRepo") and not deploy.get("repoConnected"):
                 detail += "; WARNING: no GitHub repo on Railway — git push will not redeploy"
+            if env_push.get("publicUrl"):
+                detail += f"; public URL {env_push['publicUrl']}"
             steps.append(
                 {
                     "step": "railway_env_push",
