@@ -1,4 +1,12 @@
-"""Keys safe to reveal for clipboard copy (publishable + webhook — not sk_ secret)."""
+"""Keys safe to reveal for clipboard copy (publishable keys only).
+
+STRIPE_WEBHOOK_SECRET is deliberately excluded: unlike a publishable key, a webhook
+signing secret lets anyone who has it forge a signed Stripe event (e.g. a fake
+checkout.session.completed) against this app's webhook endpoint. Since a verified
+event with subscription + domain metadata automatically issues a license/subscription
+(see apps.licenses), leaking whsec_ is equivalent to leaking write access to billing
+state, not a display convenience. It must only ever be read from the Stripe Dashboard.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +22,6 @@ COPYABLE_VAULT_KEYS = frozenset(
     {
         "STRIPE_PUBLISHABLE_KEY",
         "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
-        "STRIPE_WEBHOOK_SECRET",
     }
 )
 
@@ -35,7 +42,9 @@ class VaultCopyView(ProjectOwnedMixin, APIView):
                 {
                     "error": (
                         f"{key} cannot be copied from the vault UI. "
-                        "Secret keys (sk_live_) must be copied from Stripe Dashboard. "
+                        "Secret keys (sk_live_) and webhook signing secrets (whsec_) must be "
+                        "copied from the Stripe Dashboard directly — a leaked webhook secret "
+                        "lets anyone forge signed events against this app. "
                         "Use Sync keys to billing projects to copy server-side without displaying."
                     ),
                     "copyable": False,

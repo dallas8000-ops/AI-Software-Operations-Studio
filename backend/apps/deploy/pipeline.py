@@ -247,9 +247,10 @@ def run_deploy_pipeline(
             )
             next_steps.insert(0, env_push_result.get("message", "Railway env vars updated"))
             if platform == "railway" and "DATABASE_URL" not in pushed and not get_database_url(project):
-                deploy_blockers.append(
-                    "Railway env push did not include DATABASE_URL — add Postgres service in Railway "
-                    "or store DATABASE_URL in vault"
+                # Warn but don't block — Railway Postgres plugin may already provide DATABASE_URL
+                next_steps.append(
+                    "DATABASE_URL not pushed from vault — confirm Railway Postgres plugin is linked "
+                    "or add DATABASE_URL to vault if the app needs it injected"
                 )
         except (RuntimeError, ValueError) as exc:
             msg = str(exc)

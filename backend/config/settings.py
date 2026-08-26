@@ -44,13 +44,21 @@ def _normalize_database_url(url: str) -> str:
 if os.environ.get("DATABASE_URL"):
     os.environ["DATABASE_URL"] = _normalize_database_url(os.environ["DATABASE_URL"])
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me-in-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 RUNNING_TESTS = "test" in sys.argv
 if RUNNING_TESTS:
     # Never let tests read or write the developer's real per-project vault.
     os.environ["STRIPE_INSTALLER_DATA_DIR"] = str(
         Path(tempfile.gettempdir()) / "ai-software-operations-studio-tests"
+    )
+
+_INSECURE_DEFAULT_SECRET_KEY = "dev-only-change-me-in-production"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _INSECURE_DEFAULT_SECRET_KEY)
+if not DEBUG and not RUNNING_TESTS and SECRET_KEY == _INSECURE_DEFAULT_SECRET_KEY:
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY is not set and DJANGO_DEBUG is false — refusing to start with the "
+        "insecure default signing key in production. Set DJANGO_SECRET_KEY in Railway Variables "
+        "(generate one with: python -c \"import secrets; print(secrets.token_urlsafe(50))\")."
     )
 
 _env_hosts = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]

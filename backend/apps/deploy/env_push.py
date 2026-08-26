@@ -378,7 +378,7 @@ def ensure_ai_memory_engine_railway_volume(
         created = True
     except RuntimeError as exc:
         message = str(exc).lower()
-        if not any(marker in message for marker in ("already", "exists", "mount path")):
+        if not any(marker in message for marker in ("already", "exists", "mount path", "volumes attached", "only have one volume")):
             raise
         created = False
 

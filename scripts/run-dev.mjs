@@ -134,7 +134,7 @@ if (!existsSync(viteJs)) {
 
 const repair = spawnSync(
   python,
-  ["manage.py", "fix_project_workspace", "--all-projects", "--skip-vault", "--remove-stale-workspaces"],
+  ["manage.py", "fix_project_workspace", "--all-projects", "--skip-vault"],
   { cwd: path.join(root, "backend"), stdio: "inherit", shell: false }
 );
 if (repair.status !== 0) {
