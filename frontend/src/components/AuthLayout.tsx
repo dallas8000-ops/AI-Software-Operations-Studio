@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 
 import { APP_SHORT_NAME } from "../config/branding";
 
-type AuthLayoutProps = {
+type AuthLayoutProps = Readonly<{
   title: string;
   subtitle: string;
   footer?: ReactNode;
   children: ReactNode;
-};
+}>;
 
 export default function AuthLayout({ title, subtitle, footer, children }: AuthLayoutProps) {
   return (
@@ -29,15 +29,15 @@ export default function AuthLayout({ title, subtitle, footer, children }: AuthLa
             </svg>
           </div>
           <p className="auth-brand-name">{APP_SHORT_NAME}</p>
-          <h2 className="auth-brand-headline">Stripe setup and deploy — without exposing secrets.</h2>
+          <h2 className="auth-brand-headline">Built for diagnostics, deployment, and trust.</h2>
           <p className="auth-brand-copy">
-            Encrypted vault, live verification, API Transfer deploy, and portfolio webhook audit — one
-            workspace for all your apps.
+            Secure config review, readiness checks, and operational evidence for teams shipping Windows
+            and system-level software with support and compliance in mind.
           </p>
           <ul className="auth-brand-features">
-            <li>Write-only secret vault</li>
-            <li>Live pipeline with real-time logs</li>
-            <li>Codegen for Django, Next.js, and more</li>
+            <li>Privacy-aware diagnostics workflow</li>
+            <li>Deployment evidence and support trail</li>
+            <li>Plain-language readiness checks</li>
           </ul>
         </div>
       </aside>
