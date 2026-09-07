@@ -91,6 +91,43 @@ class CheckoutTests(APITestCase):
             return_url="https://app.example.com/billing",
         )
 
+    @override_settings(SAAS_STRIPE_SECRET_KEY="")
+    @patch("apps.billing.views.stripe.checkout.Session.create")
+    def test_checkout_returns_503_when_secret_missing(self, create_session):
+        # When the platform secret is not configured, the endpoint should return 503
+        response = self.client.post(
+            "/api/v1/billing/checkout/",
+            {"priceId": "price_pro", "domain": "app.example.com"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 503)
+        create_session.assert_not_called()
+
+    @patch("apps.billing.views.stripe.billing_portal.Session.create")
+    def test_portal_ignores_client_supplied_customerid(self, create_session):
+        # Ensure a malicious client-supplied customerId cannot override stored customer
+        Subscription.objects.create(
+            user=self.user,
+            stripe_customer_id="cus_portal_owner",
+            status=Subscription.Status.ACTIVE,
+        )
+        create_session.return_value = SimpleNamespace(url="https://billing.stripe.com/test")
+
+        response = self.client.post(
+            "/api/v1/billing/portal/",
+            {"customerId": "cus_malicious"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["url"], "https://billing.stripe.com/test")
+        # Must call with the stored customer id, not the client-supplied value
+        create_session.assert_called_once_with(
+            customer="cus_portal_owner",
+            return_url="https://app.example.com/billing",
+        )
+
     @patch("apps.billing.views.stripe.Subscription.retrieve")
     def test_subscription_read_reconciles_cancellation_from_stripe(self, retrieve):
         period_end = 1785643200

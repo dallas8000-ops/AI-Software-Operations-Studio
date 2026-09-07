@@ -53,6 +53,31 @@ class BillingWebhookDeliveryTests(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertIn(b"received", response.content)
 
+    def test_invalid_signature_returns_400_and_no_event_recorded(self):
+        payload = json.dumps(
+            {
+                "id": "evt_invalid_sig",
+                "object": "event",
+                "type": "customer.subscription.updated",
+                "data": {"object": {"id": "sub_x", "object": "subscription"}},
+            }
+        )
+        client = Client()
+        # Provide an explicitly invalid signature header
+        bad_sig = {"HTTP_STRIPE_SIGNATURE": "t=123456789,v1=deadbeef"}
+
+        response = client.post(
+            "/api/v1/billing/webhook/",
+            data=payload,
+            content_type="application/json",
+            **bad_sig,
+        )
+
+        self.assertEqual(response.status_code, 400)
+        from apps.billing.models import BillingWebhookEvent
+
+        self.assertFalse(BillingWebhookEvent.objects.filter(stripe_event_id="evt_invalid_sig").exists())
+
     def test_subscription_update_reads_item_period_end_and_cancellation(self):
         user = get_user_model().objects.create_user(
             email="cancel-state@example.com",
