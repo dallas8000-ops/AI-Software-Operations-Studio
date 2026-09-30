@@ -56,8 +56,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(project).data)
 
     def list(self, request, *args, **kwargs):
+        from apps.stripe_core.portfolio_register import is_portfolio_owner, register_portfolio_projects
         from apps.stripe_core.portfolio_workspace import reconcile_hub_workspace
 
+        if is_portfolio_owner(request.user):
+            register_portfolio_projects(request.user)
         queryset = self.filter_queryset(self.get_queryset())
         for project in queryset:
             reconcile_hub_workspace(project)
