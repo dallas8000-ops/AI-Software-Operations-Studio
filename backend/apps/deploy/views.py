@@ -136,8 +136,11 @@ class DeployRunView(ProjectOwnedMixin, APIView):
 
     def post(self, request, project_slug: str):
         project = self.get_project(project_slug)
-        if not project.local_path:
-            return Response({"error": _ERR_NO_LOCAL_PATH}, status=status.HTTP_400_BAD_REQUEST)
+        from .cloud_setup import needs_cloud_setup, run_cloud_setup
+
+        if needs_cloud_setup(project):
+            run = run_cloud_setup(project, user=request.user)
+            return Response(PipelineRunSerializer(run).data, status=status.HTTP_201_CREATED)
 
         options = {
             "mode": "deploy",
