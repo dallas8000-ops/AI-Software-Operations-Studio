@@ -214,7 +214,11 @@ class StripeConfigView(ProjectOwnedMixin, APIView):
 
         if needs_cloud_setup(project):
             # Hosted Studio: the app's repo isn't on this server; nothing to read, not an error.
-            return Response({"config": {}, "exists": False, "path": "stripe.config.json", "hosted": True})
+            from apps.stripe_core.stripe_config import normalize_stripe_config
+
+            return Response(
+                {"config": normalize_stripe_config({}), "exists": False, "path": "stripe.config.json", "hosted": True}
+            )
 
         root = Path(project.local_path).resolve()
         path = stripe_config_path(root)
