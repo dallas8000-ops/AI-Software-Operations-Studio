@@ -49,8 +49,11 @@ Optional fourth service for API Transfer queue processing:
    CELERY_EAGER=false
    ```
 
-4. Attach the **custom domain** only to the **web** service.
-5. Deploy all three. Confirm:
+4. For **worker** and **beat** (and transfer-worker), set Settings → Config file path to
+   `deploy/railway.worker.toml`. The root `railway.toml` has an HTTP `/health/` check that
+   Celery processes can't answer, so without this they are marked failed.
+5. Attach the **custom domain** only to the **web** service.
+6. Deploy all three. Confirm:
    - `curl https://<domain>/health/` → `"redis":"ok"`
    - `curl https://<domain>/health/ready/` → `"status":"ready"`
    - Worker logs show `celery@` ready; beat logs show scheduler tick.

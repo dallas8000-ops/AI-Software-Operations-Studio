@@ -1,0 +1,13 @@
+# Railway config for the non-HTTP Studio services (PROCESS_TYPE=worker | beat | transfer-worker).
+# Same image as the web service, but no HTTP health check: Celery processes don't
+# serve /health/, so the root railway.toml check would mark them failed forever.
+# In Railway set each service's "Config file path" to deploy/railway.worker.toml.
+# See deploy/RAILWAY-SERVICES.md.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
