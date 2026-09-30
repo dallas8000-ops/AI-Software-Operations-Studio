@@ -63,11 +63,12 @@ class CloudSetupTests(TestCase):
         self.assertEqual(get_secret(self.project, "STRIPE_SECRET_KEY"), "sk_test_vault")
         self.assertNotIn("STRIPE_SECRET_KEY", run.result["importedKeys"])
 
-    def test_missing_webhook_secret_is_reported(self, _resolve, _env, get_vars, *_):
-        get_vars.return_value = {k: v for k, v in RAILWAY_VARS.items() if k != "STRIPE_WEBHOOK_SECRET"}
+    def test_missing_webhook_secret_is_reported(self, *_):
+        without_whsec = {k: v for k, v in RAILWAY_VARS.items() if k != "STRIPE_WEBHOOK_SECRET"}
+        with patch("apps.deploy.env_push.get_railway_env_vars", return_value=without_whsec):
+            run = run_cloud_setup(self.project, user=self.user)
 
-        run = run_cloud_setup(self.project, user=self.user)
-
+        self.assertEqual(run.error_message, "")
         failing = [c["name"] for c in run.result["readiness"]["checks"] if c["status"] == "fail"]
         self.assertEqual(failing, ["Webhook signing secret"])
         self.assertLess(run.readiness_score, 100)
