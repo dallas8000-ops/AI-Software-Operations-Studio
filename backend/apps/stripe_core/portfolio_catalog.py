@@ -208,9 +208,9 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
     {
         "id": "dbops",
         "name": "DBOps Control Center",
-        "productionUrl": "https://dbops-api-production-5047.up.railway.app",
+        "productionUrl": "https://dbops-control-center-production.up.railway.app",
         "webhookPath": "/billing/webhook",
-        "healthPath": "/health/",
+        "healthPath": "/health",
         "projectSlug": "dbops-control-center",
         "defaultLocalPath": r"C:\Software Projects\DBOps-Control-Center",
         "notes": "Webhook on API service (not dbops-web frontend)",
