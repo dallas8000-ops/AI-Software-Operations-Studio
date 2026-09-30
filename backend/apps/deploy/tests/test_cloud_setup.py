@@ -111,4 +111,16 @@ class CloudSetupTests(TestCase):
         with patch("apps.deploy.cloud_setup.needs_cloud_setup", return_value=True):
             deploy_cfg = client.get(f"{base}/deploy/config/", secure=True)
         self.assertEqual(deploy_cfg.status_code, 200)
+
+    def test_readiness_button_runs_cloud_check(self, *_):
+        from rest_framework.test import APIClient
+
+        client = APIClient()
+        client.force_authenticate(self.user)
+        with patch("apps.deploy.cloud_setup.needs_cloud_setup", return_value=True):
+            response = client.get(f"/api/v1/projects/{self.project.slug}/readiness/", secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["score"], 100)
+        self.assertTrue(response.data["checks"])
         self.assertIn("provider", deploy_cfg.data["config"]["postgres"])
