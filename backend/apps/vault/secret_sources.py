@@ -90,7 +90,7 @@ def discover_secret_sources(project: Project) -> dict:
     sources.append(
         SecretSource(
             kind="local_store",
-            label="Stripe Installer local vault",
+            label="Studio local vault",
             path=str(local_path),
             status="ready" if local_keys else ("missing" if not local_path.is_file() else "empty"),
             key_count=len(local_keys),

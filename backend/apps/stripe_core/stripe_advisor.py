@@ -96,7 +96,7 @@ def _playbook_keys_missing(links: dict[str, str]) -> list[PlaybookStep]:
         ),
         PlaybookStep(
             2,
-            "Add keys to Stripe Installer vault",
+            "Add keys to AI Software Operations Studio vault",
             "Projects → Vault → STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY. Never commit keys to git.",
             "vault",
             confirm="Vault shows both keys as stored.",
@@ -164,7 +164,7 @@ def _playbook_secret_missing(links: dict[str, str], endpoint_url: str) -> list[P
         PlaybookStep(
             3,
             "Set STRIPE_WEBHOOK_SECRET",
-            "Vault in Stripe Installer, then the same value on your host (Railway/Render env).",
+            "Vault in AI Software Operations Studio, then the same value on your host (Railway/Render env).",
             "vault",
             confirm="Host env matches Dashboard signing secret.",
         ),

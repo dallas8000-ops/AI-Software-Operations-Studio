@@ -58,9 +58,9 @@ def _send_license_email(license_obj: License) -> None:
 
     if not getattr(settings, "LICENSE_EMAIL_ENABLED", True):
         return
-    subject = "Your Stripe Installer license key"
+    subject = "Your AI Software Operations Studio license key"
     body = (
-        f"Thank you for subscribing to Stripe Installer.\n\n"
+        f"Thank you for subscribing to AI Software Operations Studio.\n\n"
         f"License key:\n{license_obj.key}\n\n"
         f"Registered domain: {license_obj.registered_domain}\n\n"
         f"Add to your deployed instance .env:\n"

@@ -19,7 +19,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    """Email-based login for the Stripe Installer SaaS."""
+    """Email-based login for the AI Software Operations Studio."""
 
     username = None
     email = models.EmailField("email address", unique=True)

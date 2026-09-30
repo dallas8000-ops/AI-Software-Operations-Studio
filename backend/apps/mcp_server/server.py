@@ -1,4 +1,4 @@
-"""MCP server for Stripe Installer — stdio tools over Django ORM."""
+"""MCP server for AI Software Operations Studio — stdio tools over Django ORM."""
 
 from __future__ import annotations
 
@@ -132,7 +132,7 @@ def _tool_open_pr_prep(args: dict) -> dict:
             dirty_files = [line[3:] for line in status.stdout.splitlines() if line.strip()]
 
     body_lines = [
-        "## Stripe Installer setup",
+        "## AI Software Operations Studio setup",
         "",
         f"Readiness score: **{readiness.get('score')}** — {readiness.get('label')}",
         "",
@@ -148,7 +148,7 @@ def _tool_open_pr_prep(args: dict) -> dict:
         "vaultKeys": list_secret_keys(project),
         "dirtyFiles": dirty_files,
         "canOpenPr": has_git_token and bool(dirty_files),
-        "suggestedTitle": "chore: Stripe Installer setup",
+        "suggestedTitle": "chore: AI Software Operations Studio setup",
         "suggestedBody": "\n".join(body_lines),
     }
 
@@ -172,7 +172,7 @@ def _tool_diagnose(args: dict) -> dict:
 
 TOOLS = {
     "list_projects": {
-        "description": "List Stripe Installer projects accessible to STRIPE_INSTALLER_USER",
+        "description": "List AI Software Operations Studio projects accessible to STRIPE_INSTALLER_USER",
         "inputSchema": {"type": "object", "properties": {}},
         "handler": _tool_list_projects,
     },
@@ -213,7 +213,7 @@ TOOLS = {
         "handler": _tool_vault_status,
     },
     "start_pipeline": {
-        "description": "Queue a Stripe Installer pipeline run for a project",
+        "description": "Queue a AI Software Operations Studio pipeline run for a project",
         "inputSchema": {
             "type": "object",
             "properties": {
