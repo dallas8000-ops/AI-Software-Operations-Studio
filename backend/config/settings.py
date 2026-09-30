@@ -148,6 +148,36 @@ if os.environ.get("DATABASE_URL"):
         db["OPTIONS"] = {"sslmode": sslmode or "require"}
     DATABASES["default"] = db
 
+
+def database_config_error(environ, engine: str, on_railway: bool, running_tests: bool) -> str | None:
+    """Return why the database config is unsafe to boot with, or None.
+
+    A DATABASE_URL that exists but is blank (e.g. a Railway reference to a
+    deleted Postgres service) used to fall through to the SQLite default. On
+    Railway that file lives in the container, so every deploy wiped all users,
+    projects and vault secrets without any error.
+    """
+    if running_tests:
+        return None
+    if "DATABASE_URL" in environ and not str(environ["DATABASE_URL"]).strip():
+        return (
+            "DATABASE_URL is set but empty - its Railway reference probably points at a "
+            "deleted database service. Refusing to fall back to ephemeral SQLite."
+        )
+    if on_railway and engine.endswith("sqlite3"):
+        return (
+            "Running on Railway with SQLite. The container filesystem is wiped on every "
+            "deploy; set DATABASE_URL to a Postgres service."
+        )
+    return None
+
+
+_db_error = database_config_error(os.environ, DATABASES["default"]["ENGINE"], ON_RAILWAY, RUNNING_TESTS)
+if _db_error:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(_db_error)
+
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [
