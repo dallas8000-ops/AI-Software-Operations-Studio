@@ -105,14 +105,20 @@ class Command(BaseCommand):
         owner = get_user_model().objects.filter(email__iexact=options["owner_email"]).first()
         if not owner:
             raise CommandError(f"Target owner not found: {options['owner_email']}")
-        selected_project_ids = [uuid.UUID(hex=row["id"]) for row in rows]
-        if options["include_vault"] and VaultSecret.objects.filter(project_id__in=selected_project_ids).exists():
+        target_slugs = [SLUG_ALIASES.get(row["slug"], row["slug"]) for row in rows]
+        if options["include_vault"] and VaultSecret.objects.filter(
+            project__owner=owner, project__slug__in=target_slugs
+        ).exists():
             raise CommandError("Vault import refused: target projects already contain secrets. No records were changed.")
         self._backup_target()
 
         created = updated = 0
         with transaction.atomic():
             imported: dict[str, Project] = {}
+            # Source project UUID -> target project. A target project matched by slug
+            # keeps its own UUID, so runs and vault rows must be re-pointed through this
+            # map; looking them up by the source UUID silently skipped them.
+            by_source_id: dict[str, Project] = {}
             for row in rows:
                 slug = SLUG_ALIASES.get(row["slug"], row["slug"])
                 defaults = {
@@ -139,6 +145,7 @@ class Command(BaseCommand):
                     )
                     created += 1
                 imported[slug] = project
+                by_source_id[str(row["id"]).replace("-", "").lower()] = project
 
             for slug, specwright_id in specwright_matches.items():
                 project = imported.get(slug)
@@ -157,7 +164,7 @@ class Command(BaseCommand):
 
             runs_created = runs_updated = 0
             for row in run_rows:
-                project = Project.objects.filter(pk=uuid.UUID(hex=row["project_id"]), owner=owner).first()
+                project = by_source_id.get(str(row["project_id"]).replace("-", "").lower())
                 if not project:
                     continue
                 run_id = uuid.UUID(hex=row["id"])
@@ -201,13 +208,13 @@ class Command(BaseCommand):
 
             vaults_imported = secrets_imported = 0
             for row in vault_rows:
-                project = Project.objects.filter(pk=uuid.UUID(hex=row["project_id"]), owner=owner).first()
+                project = by_source_id.get(str(row["project_id"]).replace("-", "").lower())
                 if not project:
                     continue
                 ProjectVault.objects.update_or_create(project=project, defaults={"salt": bytes(row["salt"])})
                 vaults_imported += 1
             for row in secret_rows:
-                project = Project.objects.filter(pk=uuid.UUID(hex=row["project_id"]), owner=owner).first()
+                project = by_source_id.get(str(row["project_id"]).replace("-", "").lower())
                 if not project:
                     continue
                 secret, _ = VaultSecret.objects.update_or_create(
@@ -244,7 +251,8 @@ class Command(BaseCommand):
     def _backup_target(self) -> None:
         db = settings.DATABASES["default"]
         if db["ENGINE"] != "django.db.backends.sqlite3":
-            raise CommandError("Automatic apply is currently limited to a SQLite Studio target.")
+            self._backup_target_json()
+            return
         source = Path(db["NAME"])
         backup_dir = source.parent / ".migration-backups"
         backup_dir.mkdir(parents=True, exist_ok=True)
@@ -252,6 +260,27 @@ class Command(BaseCommand):
         destination = backup_dir / f"studio-before-project-import-{stamp}.sqlite3"
         connection.close()
         shutil.copy2(source, destination)
+        self.stdout.write(f"Target backup: {destination}")
+
+    def _backup_target_json(self) -> None:
+        """Engine-agnostic backup (e.g. Postgres on Railway) of every table the import writes."""
+        from django.core.management import call_command
+
+        backup_dir = Path(settings.BASE_DIR) / ".migration-backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(datetime_timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        destination = backup_dir / f"studio-before-project-import-{stamp}.json"
+        with destination.open("w", encoding="utf-8") as fh:
+            call_command(
+                "dumpdata",
+                "projects.project",
+                "runs.pipelinerun",
+                "runs.pipelinerunlog",
+                "vault.projectvault",
+                "vault.vaultsecret",
+                "quality.qualityprojectlink",
+                stdout=fh,
+            )
         self.stdout.write(f"Target backup: {destination}")
 
     @staticmethod
