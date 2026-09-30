@@ -150,6 +150,26 @@ class ReadinessView(ProjectOwnedMixin, APIView):
 
     def get(self, request, project_slug: str):
         project = self.get_project(project_slug)
+        from apps.deploy.cloud_setup import needs_cloud_setup, run_cloud_setup
+
+        if needs_cloud_setup(project):
+            # Hosted Studio: no repo on this server — check the live app from Railway/Stripe.
+            run = run_cloud_setup(project, user=request.user)
+            readiness = (run.result or {}).get("readiness") or {}
+            score = run.readiness_score or 0
+            scan_data = dict(project.scan_data or {})
+            scan_data["lastReadinessScore"] = score
+            scan_data["lastReadinessLabel"] = readiness_label(score)
+            project.scan_data = scan_data
+            project.save(update_fields=["scan_data", "updated_at"])
+            return Response(
+                {
+                    "score": score,
+                    "label": readiness_label(score),
+                    "checks": readiness.get("checks") or [],
+                    "hosted": True,
+                }
+            )
         try:
             root = _require_local_path(project)
         except (ValueError, FileNotFoundError) as exc:
