@@ -49,8 +49,11 @@ Optional fourth service for API Transfer queue processing:
    CELERY_EAGER=false
    ```
 
-4. Attach the **custom domain** only to the **web** service.
-5. Deploy all three. Confirm:
+4. Set the HTTP health check (`/health/`, timeout 180s) in the **web** service's Railway
+   settings only. `railway.toml` is shared by all three services and deliberately has no
+   `healthcheckPath`: worker and beat never serve HTTP, so a shared check would fail them.
+5. Attach the **custom domain** only to the **web** service.
+6. Deploy all three. Confirm:
    - `curl https://<domain>/health/` → `"redis":"ok"`
    - `curl https://<domain>/health/ready/` → `"status":"ready"`
    - Worker logs show `celery@` ready; beat logs show scheduler tick.
