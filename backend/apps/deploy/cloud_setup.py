@@ -50,6 +50,10 @@ def catalog_entry_for(project: Project) -> CatalogEntry | None:
 
 
 def _railway_token(project: Project) -> str:
+    # The Studio's own service variable wins: vault copies on other projects can be stale.
+    token = (os.environ.get("RAILWAY_API_TOKEN") or "").strip()
+    if token:
+        return token
     token = (get_secret(project, "RAILWAY_API_TOKEN") or "").strip()
     if token:
         return token
@@ -57,7 +61,7 @@ def _railway_token(project: Project) -> str:
         token = (get_secret(other, "RAILWAY_API_TOKEN") or "").strip()
         if token:
             return token
-    return (os.environ.get("RAILWAY_API_TOKEN") or "").strip()
+    return ""
 
 
 def _check(check_id: str, name: str, status: str, message: str, fix: str | None = None) -> dict[str, Any]:
