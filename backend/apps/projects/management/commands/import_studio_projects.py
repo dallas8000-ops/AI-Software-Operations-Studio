@@ -48,6 +48,11 @@ class Command(BaseCommand):
         parser.add_argument("--include-runs", action="store_true")
         parser.add_argument("--audit-vault", action="store_true")
         parser.add_argument("--include-vault", action="store_true")
+        parser.add_argument(
+            "--skip-unreadable-vault",
+            action="store_true",
+            help="Import readable vault secrets and skip (and list) ones the current master key cannot decrypt.",
+        )
         parser.add_argument("--apply", action="store_true")
 
     def handle(self, *args, **options):
@@ -92,7 +97,18 @@ class Command(BaseCommand):
         if options["include_vault"]:
             self.stdout.write(f"Encrypted vault data selected: {len(vault_rows)} vaults, {len(secret_rows)} secrets")
             if vault_audit and vault_audit["readable"] != vault_audit["total"]:
-                raise CommandError("Vault import refused because one or more source records are unreadable.")
+                if not options.get("skip_unreadable_vault"):
+                    raise CommandError("Vault import refused because one or more source records are unreadable.")
+                slug_by_id = {str(row["id"]).replace("-", "").lower(): row["slug"] for row in rows}
+                skip = {(slug, key) for slug, keys in vault_audit["unreadable"].items() for key in keys}
+                secret_rows = [
+                    r for r in secret_rows
+                    if (slug_by_id.get(str(r["project_id"]).replace("-", "").lower()), r["key_name"]) not in skip
+                ]
+                self.stdout.write(self.style.WARNING(
+                    f"Skipping {len(skip)} unreadable secret(s); importing {len(secret_rows)}. "
+                    "Re-enter the skipped keys in the vault."
+                ))
 
         specwright_matches = self._specwright_matches(specwright_path)
         for slug, project_id in specwright_matches.items():

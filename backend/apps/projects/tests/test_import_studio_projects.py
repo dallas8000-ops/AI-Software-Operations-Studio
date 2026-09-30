@@ -129,3 +129,30 @@ class ImportIntoExistingProjectTests(TestCase):
                     apply=True,
                     stdout=StringIO(),
                 )
+
+
+class SkipUnreadableVaultTests(TestCase):
+    def test_unreadable_secret_is_skipped_and_readable_one_imported(self):
+        owner = get_user_model().objects.create_user(email="owner3@example.com", password="x-long-test-password")
+        salt = generate_salt()
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "source.sqlite3"
+            project_id = uuid.uuid4().hex
+            _build_source_db(source, project_id, uuid.uuid4().hex, salt, encrypt_secret("good", salt))
+            db = sqlite3.connect(source)
+            bad = encrypt_secret("old", salt, master_key=b"k" * 32)  # encrypted with a different key
+            db.execute(
+                "INSERT INTO vault_vaultsecret VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                (project_id, "OLD_TOKEN", bad.encrypted_value, bad.iv, bad.auth_tag, "", "live", 0, None, "",
+                 "2026-09-28 16:00:00", "2026-09-28 16:00:00"),
+            )
+            db.commit()
+            db.close()
+            common = dict(source_db=source, source_owner_id=SOURCE_OWNER_ID, owner_email="owner3@example.com",
+                          include_vault=True, apply=True, stdout=StringIO())
+            with mock.patch("apps.projects.management.commands.import_studio_projects.Command._backup_target"):
+                with self.assertRaisesMessage(Exception, "unreadable"):
+                    call_command("import_studio_projects", **common)
+                call_command("import_studio_projects", skip_unreadable_vault=True, **common)
+        keys = set(VaultSecret.objects.filter(project__slug="eastbridge-ops").values_list("key_name", flat=True))
+        self.assertEqual(keys, {"RAILWAY_API_TOKEN"})
