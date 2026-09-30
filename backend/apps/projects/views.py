@@ -266,7 +266,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         try:
             result = create_setup_pull_request(
                 project,
-                commit_message=request.data.get("commit_message", "chore: Stripe Installer setup"),
+                commit_message=request.data.get("commit_message", "chore: AI Software Operations Studio setup"),
                 pr_title=request.data.get("title"),
                 pr_body=request.data.get("body"),
             )

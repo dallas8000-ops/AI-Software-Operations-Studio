@@ -94,7 +94,7 @@ class Command(BaseCommand):
         if not key:
             return
         self.stdout.write("\n--- Pin the SAME key on Railway (required for production) ---")
-        self.stdout.write("1. Open Railway -> stripe-installer-production -> Variables")
+        self.stdout.write("1. Open Railway -> operations-studio-web -> Variables")
         self.stdout.write("2. Add or update: VAULT_MASTER_KEY")
         if show_key:
             self.stdout.write(f"   Value: {key}")

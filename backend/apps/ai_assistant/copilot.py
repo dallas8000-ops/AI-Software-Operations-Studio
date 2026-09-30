@@ -150,7 +150,7 @@ def nl_to_configs(project: Project, instruction: str) -> tuple[dict, dict, str]:
     _assert_safe(instruction)
 
     prompt = (
-        "Convert the user instruction into Stripe Installer config updates. "
+        "Convert the user instruction into AI Software Operations Studio config updates. "
         "Amounts are in cents (USD). Output ONLY JSON:\n"
         '{"stripeConfig":{"appUrl":"...","tiers":[{"name","amount","currency","interval","trialDays"}]},'
         '"deployConfig":{"productionUrl","platform","postgres":{"provider","autoProvision"}}}\n\n'
@@ -204,7 +204,7 @@ def handoff_pack(project: Project, *, production_url: str = "") -> tuple[dict[st
 
     template = {
         "prDescription": (
-            f"## Stripe Installer setup\n\n"
+            f"## AI Software Operations Studio setup\n\n"
             f"- Framework: **{framework}**\n"
             f"- Production URL: `{prod}`\n"
             f"- Webhook URL: `{webhook_url}`\n\n"

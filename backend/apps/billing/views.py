@@ -1,4 +1,4 @@
-"""Platform billing — Stripe Installer SaaS subscriptions (dogfooding our own output)."""
+"""Platform billing — AI Software Operations Studio subscriptions (dogfooding our own output)."""
 
 from __future__ import annotations
 

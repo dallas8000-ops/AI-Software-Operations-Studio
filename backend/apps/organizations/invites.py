@@ -50,7 +50,7 @@ def send_invite_email(invite: OrganizationInvite) -> bool:
     if not getattr(settings, "INVITE_EMAIL_ENABLED", True):
         return False
     url = invite_register_url(invite.token)
-    subject = f"Join {invite.organization.name} on Stripe Installer"
+    subject = f"Join {invite.organization.name} on AI Software Operations Studio"
     body = (
         f"You've been invited to join {invite.organization.name} as {invite.role}.\n\n"
         f"Create your account:\n{url}\n\n"

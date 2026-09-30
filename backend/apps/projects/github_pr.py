@@ -45,7 +45,7 @@ def _default_branch(token: str, owner: str, repo: str) -> str:
 def create_setup_pull_request(
     project: Project,
     *,
-    commit_message: str = "chore: Stripe Installer setup",
+    commit_message: str = "chore: AI Software Operations Studio setup",
     pr_title: str | None = None,
     pr_body: str | None = None,
 ) -> dict:
@@ -101,9 +101,9 @@ def create_setup_pull_request(
     if push.returncode != 0:
         raise RuntimeError(push.stderr.strip() or push.stdout.strip() or "git push failed")
 
-    title = pr_title or f"Stripe Installer setup — {project.name}"
+    title = pr_title or f"AI Software Operations Studio setup — {project.name}"
     body = pr_body or (
-        "Automated Stripe setup from [Stripe Installer](https://github.com).\n\n"
+        "Automated Stripe setup from [AI Software Operations Studio](https://github.com).\n\n"
         "Includes codegen, deploy config, and readiness artifacts."
     )
 

@@ -1,4 +1,4 @@
-"""Stripe Installer CLI — parity with legacy Node `stripe-installer` commands."""
+"""AI Software Operations Studio CLI — parity with legacy Node `stripe-installer` commands."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from apps.projects.models import Project
 
 
 class Command(BaseCommand):
-    help = "Stripe Installer CLI (scan, verify, run, deploy, clone, vault-import, …)"
+    help = "AI Software Operations Studio CLI (scan, verify, run, deploy, clone, vault-import, …)"
 
     def add_arguments(self, parser):
         parser.add_argument("--user", default="", help="Project owner email (default: first user)")

@@ -53,7 +53,7 @@ def _fix_gitignore(project_root: Path) -> RepairResult:
     added = [a for a in additions if a not in existing and a not in content]
     if not added:
         return RepairResult("fix-gitignore", True, ".gitignore already configured")
-    block = "\n# Stripe Installer\n" + "\n".join(added) + "\n"
+    block = "\n# AI Software Operations Studio\n" + "\n".join(added) + "\n"
     path.write_text(content.rstrip() + block, encoding="utf-8")
     return RepairResult("fix-gitignore", True, f"Added {', '.join(added)} to .gitignore")
 

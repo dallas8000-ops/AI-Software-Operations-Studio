@@ -1,4 +1,4 @@
-"""Stripe Installer's own secrets — stored only under ~/.stripe-installer/ (never in git)."""
+"""AI Software Operations Studio's own secrets — stored only under ~/.stripe-installer/ (never in git)."""
 
 from __future__ import annotations
 

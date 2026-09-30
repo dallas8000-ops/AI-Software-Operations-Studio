@@ -199,13 +199,16 @@ def verify_project(project: Project) -> dict[str, Any]:
                 )
             )
 
+    def value(key: str) -> str:
+        # The app's Railway variables are the truth once read; the vault is only a fallback
+        # when Railway was unreachable (it can hold hub or env-file values for other apps).
+        if railway:
+            return str(variables.get(key) or "").strip()
+        return (get_secret(project, key) or "").strip()
+
     if not is_stripe_exempt_slug(entry.get("projectSlug") or ""):
-        secret_key = variables.get("STRIPE_SECRET_KEY") or get_secret(project, "STRIPE_SECRET_KEY") or ""
-        has_publishable = bool(
-            variables.get("STRIPE_PUBLISHABLE_KEY")
-            or variables.get("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY")
-            or get_secret(project, "STRIPE_PUBLISHABLE_KEY")
-        )
+        secret_key = value("STRIPE_SECRET_KEY")
+        has_publishable = bool(value("STRIPE_PUBLISHABLE_KEY") or value("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"))
         checks.append(
             _check(
                 "stripe_keys",
@@ -217,7 +220,7 @@ def verify_project(project: Project) -> dict[str, Any]:
                 None if secret_key and has_publishable else "Set STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY on the app's Railway service",
             )
         )
-        has_whsec = bool(variables.get("STRIPE_WEBHOOK_SECRET") or get_secret(project, "STRIPE_WEBHOOK_SECRET"))
+        has_whsec = bool(value("STRIPE_WEBHOOK_SECRET"))
         checks.append(
             _check(
                 "webhook_secret",
@@ -231,7 +234,7 @@ def verify_project(project: Project) -> dict[str, Any]:
             status_value, message = _webhook_check(secret_key, _join(base_url, webhook_path))
             checks.append(_check("stripe_webhook", "Stripe webhook", status_value, message))
 
-    has_db = bool(variables.get("DATABASE_URL") or get_secret(project, "DATABASE_URL"))
+    has_db = bool(value("DATABASE_URL"))
     checks.append(
         _check(
             "database",

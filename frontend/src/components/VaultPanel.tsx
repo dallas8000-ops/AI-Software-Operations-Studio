@@ -327,7 +327,7 @@ export default function VaultPanel({
               type={showLegacyPass ? "text" : "password"}
               value={legacyPassphrase}
               onChange={(e) => setLegacyPassphrase(e.target.value)}
-              placeholder="Passphrase from old stripe-installer vault unlock"
+              placeholder="Passphrase from the legacy CLI vault unlock"
               autoComplete="off"
             />
           </label>
