@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from django.conf import settings
 
@@ -68,12 +68,25 @@ def is_inside_hub_repo(path: str, project: Project | None = None) -> bool:
     # the control plane is renamed to AI Software Operations Studio.
     if "\\deployment-stripe-center\\backend\\clone" in normalized:
         return True
+    if _is_foreign_absolute_path(path):
+        # e.g. "C:\\Software Projects\\App" checked by the Studio running on Linux.
+        # Path() would treat it as a *relative* name and resolve it under the
+        # current directory (inside this repo), wrongly flagging every Windows
+        # path as nested in the hub. A path from another OS can't be inside it.
+        return False
     try:
         resolved = Path(path).resolve()
         resolved.relative_to(HUB_REPO_ROOT)
         return True
     except (ValueError, OSError):
         return False
+
+
+def _is_foreign_absolute_path(path: str) -> bool:
+    """True when path is absolute on the other OS family than the one we run on."""
+    if Path(path).is_absolute():
+        return False
+    return PureWindowsPath(path).is_absolute() or PurePosixPath(path).is_absolute()
 
 
 def is_invalid_portfolio_path(project: Project, path: str) -> bool:
