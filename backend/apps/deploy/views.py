@@ -9,6 +9,7 @@ from apps.runs.serializers import PipelineRunSerializer
 from apps.stripe_core.readiness import readiness_label, run_readiness_checks, score_readiness
 from django.shortcuts import get_object_or_404
 
+from .errors import workspace_missing_response
 from .infra import generate_and_write_infra, generate_infra_files, infra_summary
 from .preflight import run_deploy_preflight
 from .postgres import apply_postgres_schema, get_production_url, postgres_status, schema_sql, test_postgres_connection
@@ -157,11 +158,14 @@ class DeployRunView(ProjectOwnedMixin, APIView):
         skip_preflight = request.data.get("skip_preflight", False)
         skip_platform_bootstrap = request.data.get("skip_platform_bootstrap", False)
 
-        automation = run_automation_before_pipeline(
-            project,
-            user=request.user,
-            hub_bootstrap=not skip_platform_bootstrap,
-        )
+        try:
+            automation = run_automation_before_pipeline(
+                project,
+                user=request.user,
+                hub_bootstrap=not skip_platform_bootstrap,
+            )
+        except FileNotFoundError as exc:
+            return workspace_missing_response(exc)
         options["platformAutomation"] = automation
 
         if not skip_preflight:

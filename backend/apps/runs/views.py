@@ -91,11 +91,16 @@ class PipelineRunListCreateView(ProjectOwnedMixin, generics.ListCreateAPIView):
 
         from apps.deploy.automation_gate import run_automation_before_pipeline
 
-        options["platformAutomation"] = run_automation_before_pipeline(
-            project,
-            user=request.user,
-            hub_bootstrap=(project.slug == HUB_SLUG),
-        )
+        from apps.deploy.errors import workspace_missing_response
+
+        try:
+            options["platformAutomation"] = run_automation_before_pipeline(
+                project,
+                user=request.user,
+                hub_bootstrap=(project.slug == HUB_SLUG),
+            )
+        except FileNotFoundError as exc:
+            return workspace_missing_response(exc)
 
         run = PipelineRun.objects.create(
             project=project,

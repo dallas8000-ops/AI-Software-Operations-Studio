@@ -22,6 +22,16 @@ load_app_secrets_into_environ(backend_dir=BASE_DIR)
 RAILWAY_PUBLIC_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
 ON_RAILWAY = bool(os.environ.get("RAILWAY_ENVIRONMENT") or RAILWAY_PUBLIC_DOMAIN)
 
+# The hosted Studio can't see a developer's disk (C:\Software Projects\...). When enabled,
+# setup clones each app's git_url into a server workspace outside this repo and runs there
+# (the behaviour removed in 9be55d7, restored for hosted mode only). Local Studio: off.
+SERVER_WORKSPACES_ENABLED = (
+    os.environ.get("SERVER_WORKSPACES", "true" if ON_RAILWAY else "false").strip().lower() == "true"
+)
+PROJECT_WORKSPACE_ROOT = Path(
+    os.environ.get("PROJECT_WORKSPACE_ROOT") or (Path(tempfile.gettempdir()) / "studio-workspaces")
+)
+
 
 def _public_app_url() -> str:
     for key in ("APP_PUBLIC_URL", "SAAS_BILLING_RETURN_URL"):

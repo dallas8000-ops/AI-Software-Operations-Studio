@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 import tempfile
 from pathlib import Path
 
@@ -58,3 +58,16 @@ class DeployPreflightTests(TestCase):
                             with patch("apps.deploy.preflight._list_railway_projects", return_value=[]):
                                 result = run_deploy_preflight(project, push_railway_env=True, provision_stripe=False)
         self.assertTrue(any("returned no projects" in w for w in result["warnings"]))
+
+
+class WorkspaceMissingResponseTests(SimpleTestCase):
+    def test_missing_folder_is_a_clear_409_not_a_500(self):
+        from apps.deploy.errors import workspace_missing_response
+
+        resp = workspace_missing_response(
+            FileNotFoundError(r"Project folder not found: C:\Software Projects\EnPowerCommand.")
+        )
+        self.assertEqual(resp.status_code, 409)
+        self.assertEqual(resp.data["code"], "workspace_missing")
+        self.assertIn("EnPowerCommand", resp.data["error"])
+        self.assertIn("Studio on the computer", resp.data["error"])
