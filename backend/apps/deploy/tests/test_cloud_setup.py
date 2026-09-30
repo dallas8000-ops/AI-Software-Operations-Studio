@@ -106,3 +106,9 @@ class CloudSetupTests(TestCase):
         self.assertEqual(readiness.data["score"], 100)
         self.assertTrue(readiness.data["checks"])
         self.assertEqual(stripe_cfg.status_code, 200)
+        # The frontend maps over these; an empty object blanks the project page.
+        self.assertIsInstance(stripe_cfg.data["config"]["tiers"], list)
+        with patch("apps.deploy.cloud_setup.needs_cloud_setup", return_value=True):
+            deploy_cfg = client.get(f"{base}/deploy/config/", secure=True)
+        self.assertEqual(deploy_cfg.status_code, 200)
+        self.assertIn("provider", deploy_cfg.data["config"]["postgres"])

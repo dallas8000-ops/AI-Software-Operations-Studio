@@ -264,7 +264,9 @@ class DeployConfigView(ProjectOwnedMixin, APIView):
         from .cloud_setup import needs_cloud_setup
 
         if needs_cloud_setup(project):
-            return Response({"config": {}, "exists": False, "path": "deploy.config.json", "hosted": True})
+            return Response(
+                {"config": config_from_project(project), "exists": False, "path": "deploy.config.json", "hosted": True}
+            )
         root = Path(project.local_path).resolve()
 
         path = deploy_config_path(root)
