@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import urllib.parse
 from pathlib import Path
@@ -111,3 +112,46 @@ def pull_project_repo(project: Project) -> dict:
         "git_url": project.git_url,
         "authenticated": bool(env.get("GIT_SSH_COMMAND")),
     }
+
+
+def _scrub(text: str, project: Project) -> str:
+    token = _resolve_git_token(project)
+    return text.replace(token, "***") if token else text
+
+
+def clone_to_server_workspace(project: Project) -> Path:
+    """Hosted Studio only: clone/update project.git_url into PROJECT_WORKSPACE_ROOT/<slug>.
+
+    Points project.local_path at the checkout so every existing local_path consumer works.
+    The hosted Studio has its own database, so this never touches a local Studio's paths.
+    """
+    git_url = validate_git_url(project.git_url or "")
+    root = Path(settings.PROJECT_WORKSPACE_ROOT)
+    root.mkdir(parents=True, exist_ok=True)
+    dest = root / project.slug
+    env = _git_subprocess_env(project)
+
+    if (dest / ".git").is_dir():
+        pull = subprocess.run(
+            ["git", "-C", str(dest), "pull", "--ff-only"],
+            capture_output=True, text=True, timeout=300, env=env,
+        )
+        if pull.returncode != 0:
+            shutil.rmtree(dest, ignore_errors=True)
+    if not (dest / ".git").is_dir():
+        if dest.exists():
+            shutil.rmtree(dest, ignore_errors=True)
+        clone = subprocess.run(
+            ["git", "clone", "--depth", "1", _authenticated_url(git_url, project), str(dest)],
+            capture_output=True, text=True, timeout=600, env=env,
+        )
+        if clone.returncode != 0:
+            shutil.rmtree(dest, ignore_errors=True)
+            message = _scrub(clone.stderr.strip() or clone.stdout.strip() or "git clone failed", project)
+            if "Authentication failed" in message or "403" in message or "not found" in message.lower():
+                message += " — for a private repo, store GITHUB_TOKEN in this project's or the hub's vault"
+            raise RuntimeError(f"Could not clone {git_url} on the server: {message}")
+
+    project.local_path = str(dest.resolve())
+    project.save(update_fields=["local_path", "updated_at"])
+    return dest.resolve()

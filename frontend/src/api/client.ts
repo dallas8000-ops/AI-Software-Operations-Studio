@@ -148,7 +148,11 @@ export async function apiFetch<T>(
         message = String(err.error ?? err.email ?? JSON.stringify(err));
       }
     } catch {
-      if (res.status === 404) {
+      const isLocalDev = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+      if (!isLocalDev) {
+        // Hosted Studio: the local-dev hints below (ports, npm run dev) are wrong here.
+        message = res.status >= 500 ? `Server error (${res.status}) — check the Studio logs.` : `Request failed (${res.status}).`;
+      } else if (res.status === 404) {
         message = `API not found (${path}) — stale backend. Run: npm run dev:stop  and then  npm run dev`;
       } else if (res.status === 409 || res.status === 503) {
         message = "Port 8000 is in use by another process. Close old backend terminals, then run npm run dev again.";
