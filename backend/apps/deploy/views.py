@@ -92,11 +92,27 @@ class DeployReadinessView(ProjectOwnedMixin, APIView):
         project = self.get_project(project_slug)
         from pathlib import Path
 
-        if not project.local_path:
-            return Response({"error": _ERR_NO_LOCAL_PATH}, status=status.HTTP_400_BAD_REQUEST)
+        from .cloud_setup import needs_cloud_setup
+
+        if needs_cloud_setup(project):
+            # Hosted Studio: report the latest cloud setup result instead of reading a repo.
+            latest = (
+                PipelineRun.objects.filter(project=project, options__mode="cloud_setup")
+                .order_by("-created_at")
+                .first()
+            )
+            readiness = ((latest.result or {}).get("readiness") or {}) if latest else {}
+            score = readiness.get("score") if latest else None
+            return Response(
+                {
+                    "score": score,
+                    "label": readiness_label(score) if score is not None else "Not checked — run setup",
+                    "checks": readiness.get("checks") or [],
+                    "postgres": postgres_status(project),
+                    "hosted": True,
+                }
+            )
         root = Path(project.local_path).resolve()
-        if not root.is_dir():
-            return Response({"error": f"Project path not found: {root}"}, status=status.HTTP_400_BAD_REQUEST)
         app_url = request.query_params.get("app_url") or get_production_url(
             project, request.build_absolute_uri("/").rstrip("/")
         )
@@ -241,11 +257,11 @@ class DeployConfigView(ProjectOwnedMixin, APIView):
         from .config import config_from_project, deploy_config_path
 
         project = self.get_project(project_slug)
-        if not project.local_path:
-            return Response({"error": _ERR_NO_LOCAL_PATH}, status=status.HTTP_400_BAD_REQUEST)
+        from .cloud_setup import needs_cloud_setup
+
+        if needs_cloud_setup(project):
+            return Response({"config": {}, "exists": False, "path": "deploy.config.json", "hosted": True})
         root = Path(project.local_path).resolve()
-        if not root.is_dir():
-            return Response({"error": f"Project path not found: {root}"}, status=status.HTTP_400_BAD_REQUEST)
 
         path = deploy_config_path(root)
         return Response(

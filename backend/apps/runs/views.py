@@ -67,6 +67,12 @@ class PipelineRunListCreateView(ProjectOwnedMixin, generics.ListCreateAPIView):
         body = StartPipelineSerializer(data=request.data)
         body.is_valid(raise_exception=True)
 
+        from apps.deploy.cloud_setup import needs_cloud_setup, run_cloud_setup
+
+        if needs_cloud_setup(project):
+            run = run_cloud_setup(project, user=request.user)
+            return Response(PipelineRunSerializer(run).data, status=status.HTTP_201_CREATED)
+
         if not project.local_path:
             return Response(
                 {"error": "Set project local_path before running the pipeline."},
@@ -204,12 +210,13 @@ class StripeConfigView(ProjectOwnedMixin, APIView):
         from apps.stripe_core.stripe_config import config_from_disk, stripe_config_path
 
         project = self.get_project(project_slug)
-        if not project.local_path:
-            return Response({"error": "Set project local_path first."}, status=status.HTTP_400_BAD_REQUEST)
-        root = Path(project.local_path).resolve()
-        if not root.is_dir():
-            return Response({"error": f"Project path not found: {root}"}, status=status.HTTP_400_BAD_REQUEST)
+        from apps.deploy.cloud_setup import needs_cloud_setup
 
+        if needs_cloud_setup(project):
+            # Hosted Studio: the app's repo isn't on this server; nothing to read, not an error.
+            return Response({"config": {}, "exists": False, "path": "stripe.config.json", "hosted": True})
+
+        root = Path(project.local_path).resolve()
         path = stripe_config_path(root)
         return Response(
             {
