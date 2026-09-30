@@ -89,3 +89,20 @@ class CloudSetupTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["status"], PipelineRun.Status.COMPLETED)
+
+    def test_pipeline_run_button_and_readiness_use_cloud_setup(self, *_):
+        from rest_framework.test import APIClient
+
+        client = APIClient()
+        client.force_authenticate(self.user)
+        base = f"/api/v1/projects/{self.project.slug}"
+        with patch("apps.deploy.cloud_setup.needs_cloud_setup", return_value=True):
+            run_response = client.post(f"{base}/runs/", {}, format="json", secure=True)
+            readiness = client.get(f"{base}/deploy/readiness/", secure=True)
+            stripe_cfg = client.get(f"{base}/stripe/config/", secure=True)
+
+        self.assertEqual(run_response.status_code, 201)
+        self.assertEqual(readiness.status_code, 200)
+        self.assertEqual(readiness.data["score"], 100)
+        self.assertTrue(readiness.data["checks"])
+        self.assertEqual(stripe_cfg.status_code, 200)
