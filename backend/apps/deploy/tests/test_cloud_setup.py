@@ -6,7 +6,6 @@ from django.test import TestCase
 from apps.deploy.cloud_setup import catalog_entry_for, needs_cloud_setup, run_cloud_setup
 from apps.projects.models import Project
 from apps.runs.models import PipelineRun
-from apps.runs.status import project_status
 from apps.vault.models import get_secret, set_secret
 
 RAILWAY_VARS = {
@@ -44,7 +43,9 @@ class CloudSetupTests(TestCase):
         self.assertEqual(run.readiness_score, 100)
         self.assertEqual(get_secret(self.project, "STRIPE_SECRET_KEY"), "sk_test_railway")
         self.assertIsNone(get_secret(self.project, "DEBUG"))
-        self.assertEqual(project_status(run)["tone"], "ok")
+        checks = run.result["readiness"]["checks"]
+        self.assertTrue(checks)
+        self.assertTrue(all(c["status"] == "pass" for c in checks))
 
     def test_never_overwrites_existing_vault_values(self, *_):
         set_secret(self.project, "STRIPE_SECRET_KEY", "sk_test_vault")
@@ -59,9 +60,9 @@ class CloudSetupTests(TestCase):
 
         run = run_cloud_setup(self.project, user=self.user)
 
-        status = project_status(run)
-        self.assertEqual(status["tone"], "fail")
-        self.assertEqual(status["issues"][0]["name"], "Webhook signing secret")
+        failing = [c["name"] for c in run.result["readiness"]["checks"] if c["status"] == "fail"]
+        self.assertEqual(failing, ["Webhook signing secret"])
+        self.assertLess(run.readiness_score, 100)
 
     def test_hand_added_project_matches_catalog_by_name(self, *_):
         duplicate = Project.objects.create(owner=self.user, name="Kistie Store", slug="kistie-store-1")
