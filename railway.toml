@@ -9,7 +9,8 @@ dockerfilePath = "Dockerfile"
 # Do not set a custom Start Command in Railway — ENTRYPOINT runs collectstatic, migrate, then Daphne.
 
 [deploy]
-healthcheckPath = "/health/"
-healthcheckTimeout = 180
+# No healthcheckPath here: this file is shared by web, worker and beat, and Celery
+# processes never serve HTTP. The /health/ check (timeout 180s) is set on the
+# operations-studio-web service itself in Railway settings.
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
