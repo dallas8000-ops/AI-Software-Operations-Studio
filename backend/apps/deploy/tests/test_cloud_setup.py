@@ -36,9 +36,10 @@ class CloudSetupTests(TestCase):
         self.user =get_user_model().objects.create_user(email="owner@example.com", password="test-pass-123")
         self.project = Project.objects.create(
             owner=self.user,
-            name="Kistie Store",
-            slug="kistie-store",
-            local_path=r"C:\Software Projects\Kristie-Store-does-not-exist-here",
+            # A Stripe-billing catalog app (Kistie is Stripe-exempt on main).
+            name="RIGHAND",
+            slug="righand",
+            local_path=r"C:\Software Projects\RigHand-does-not-exist-here",
         )
 
     def test_missing_folder_triggers_cloud_setup(self, *_):
