@@ -352,6 +352,12 @@ def setup_hub_status(project: Project, *, user=None) -> dict[str, Any]:
             if project.slug != HUB_SLUG
             else "Run Reset workspace if missing"
         )
+        from apps.deploy.cloud_setup import needs_cloud_setup
+
+        if not stripe_config_exists and needs_cloud_setup(project):
+            # Hosted Studio: stripe.config.json lives in the app's repo, not on this server.
+            stripe_config_exists = True
+            stripe_config_detail = "Not needed on the hosted Studio — the app's live Stripe setup is checked instead"
 
     steps = [
         {
