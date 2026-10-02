@@ -80,7 +80,7 @@ PORTFOLIO_LIVE_URL_SLUGS: dict[str, str] = {
 
 # Apps that run without a Railway Postgres (file/SQLite/external DB).
 DATABASE_OPTIONAL_SLUGS: frozenset[str] = frozenset(
-    {"specwright", "dbops-control-center", "ai-memory-engine"}
+    {"specwright", "dbops-control-center", "ai-memory-engine", "frontlinedigital"}
 )
 
 STRIPE_EXEMPT_SLUGS: frozenset[str] = frozenset(
