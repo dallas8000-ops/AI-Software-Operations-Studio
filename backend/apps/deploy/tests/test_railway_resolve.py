@@ -23,7 +23,7 @@ class RailwayResolveTests(SimpleTestCase):
 
     @patch("apps.deploy.railway_resolve.update_project_scan_data")
     @patch("apps.deploy.railway_resolve._railway_gql")
-    @patch("apps.deploy.railway_resolve._service_public_hosts", return_value=set())
+    @patch("apps.deploy.railway_resolve._service_public_hosts_strict", return_value=set())
     def test_ensure_public_domain_creates_and_persists_url(
         self, mock_hosts, mock_gql, mock_update
     ):
@@ -49,7 +49,7 @@ class RailwayResolveTests(SimpleTestCase):
 
     @patch("apps.deploy.railway_resolve.update_project_scan_data")
     @patch(
-        "apps.deploy.railway_resolve._service_public_hosts",
+        "apps.deploy.railway_resolve._service_public_hosts_strict",
         return_value={"existing.up.railway.app"},
     )
     def test_ensure_public_domain_reuses_existing_host(self, mock_hosts, mock_update):
@@ -62,3 +62,17 @@ class RailwayResolveTests(SimpleTestCase):
             project,
             {"productionUrl": url, "production_url": url},
         )
+
+    @patch("apps.deploy.railway_resolve._railway_gql")
+    @patch(
+        "apps.deploy.railway_resolve._service_public_hosts_strict",
+        side_effect=RuntimeError("Not Authorized"),
+    )
+    def test_lookup_error_never_creates_a_domain(self, mock_hosts, mock_gql):
+        class P:
+            scan_data = {"productionUrl": "https://known.up.railway.app"}
+
+        url = ensure_railway_public_domain(P(), "token", "project-id", "service-id", "env-id")
+
+        self.assertEqual(url, "https://known.up.railway.app")
+        mock_gql.assert_not_called()

@@ -241,9 +241,14 @@ def _name_matches(candidate: str, target: str) -> bool:
 
 def _service_public_hosts(token: str, project_id: str, service_id: str) -> set[str]:
     try:
-        projects = _list_railway_projects_with_domains(token)
+        return _service_public_hosts_strict(token, project_id, service_id)
     except RuntimeError:
         return set()
+
+
+def _service_public_hosts_strict(token: str, project_id: str, service_id: str) -> set[str]:
+    """Public hosts of a service; raises when Railway cannot be read, so callers never mistake an error for "no domain"."""
+    projects = _list_railway_projects_with_domains(token)
     for proj in projects:
         if proj.get("id") != project_id:
             continue
@@ -479,7 +484,13 @@ def ensure_railway_public_domain(
     environment_id: str | None = None,
 ) -> str:
     """Return the service URL, creating a Railway-provided domain when missing."""
-    hosts = _service_public_hosts(token, project_id, service_id)
+    try:
+        hosts = _service_public_hosts_strict(token, project_id, service_id)
+    except RuntimeError:
+        known = str((project.scan_data or {}).get("productionUrl") or "").strip()
+        if known:
+            return known
+        raise
     if hosts:
         hostname = _preferred_host(project, hosts)
     else:
