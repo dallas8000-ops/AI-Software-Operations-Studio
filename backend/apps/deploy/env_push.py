@@ -128,6 +128,13 @@ def merge_env_vars(
     return merged
 
 
+def railway_api_token(project: Project) -> str:
+    """The Studio's own Railway token wins: vault copies on other projects can be stale."""
+    import os
+
+    return (os.environ.get("RAILWAY_API_TOKEN") or get_secret(project, "RAILWAY_API_TOKEN") or "").strip()
+
+
 def is_railway_reference(value: str) -> bool:
     """True when value is a Railway service reference like ${{Postgres.DATABASE_URL}}."""
     text = str(value or "").strip()
@@ -411,7 +418,7 @@ def push_vault_env_to_platform(
     if platform != "railway":
         raise ValueError(f"Unsupported platform '{platform}' — supported: railway")
 
-    token = get_secret(project, "RAILWAY_API_TOKEN")
+    token = railway_api_token(project)
     if not token:
         raise RuntimeError(
             "RAILWAY_API_TOKEN not in vault — create at https://railway.com/account/tokens"
@@ -488,11 +495,11 @@ def push_monorepo_railway_live_env(project: Project) -> dict[str, Any] | None:
     if not api_url or not web_url or api_url == web_url:
         return None
 
-    token = get_secret(project, "RAILWAY_API_TOKEN")
+    token = railway_api_token(project)
     hub = get_hub_project(project.owner)
     if not token and hub:
         repair_project_vault_from_hub(project, hub)
-        token = get_secret(project, "RAILWAY_API_TOKEN")
+        token = railway_api_token(project)
     if not token:
         return {"ok": False, "skipped": True, "message": "RAILWAY_API_TOKEN not in vault"}
 
@@ -625,7 +632,7 @@ def auto_push_railway_env(
         resolve_railway_web_service_id,
     )
 
-    token = get_secret(project, "RAILWAY_API_TOKEN")
+    token = railway_api_token(project)
     if not token:
         raise RuntimeError(
             "RAILWAY_API_TOKEN not in vault — create at https://railway.com/account/tokens"
