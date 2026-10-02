@@ -195,14 +195,6 @@ def repair_portfolio_local_path(project: Project, *, save: bool = True) -> tuple
     return target, current != target
 
 
-def _can_use_server_workspace(project: Project) -> bool:
-    return bool(
-        getattr(settings, "SERVER_WORKSPACES_ENABLED", False)
-        and project.slug != HUB_SLUG
-        and (project.git_url or "").strip()
-    )
-
-
 def require_project_folder(project: Project) -> Path:
     """Resolved, existing project root — raises if missing or inside the hub repo."""
     repair_portfolio_local_path(project)
@@ -210,10 +202,6 @@ def require_project_folder(project: Project) -> Path:
     if err:
         raise ValueError(err)
     root = Path(resolve_workspace_path(project) or project.local_path or "")
-    if not root.is_dir() and _can_use_server_workspace(project):
-        from apps.projects.git_clone import clone_to_server_workspace
-
-        return clone_to_server_workspace(project)
     if not root.is_dir():
         raise FileNotFoundError(
             f"Project folder not found: {root}. Open that folder in your editor and clone the repo there manually."
