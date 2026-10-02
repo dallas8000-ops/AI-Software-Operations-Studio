@@ -136,3 +136,31 @@ class CloudSetupTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["score"], 100)
         self.assertTrue(response.data["checks"])
+
+
+class AutoRepairTests(TestCase):
+    def test_repairs_stray_prefix_before_scheme(self):
+        from apps.deploy.cloud_setup import repaired_database_url
+
+        self.assertEqual(repaired_database_url("URLpostgresql://u:p@h:5432/db"), "postgresql://u:p@h:5432/db")
+        self.assertIsNone(repaired_database_url("postgresql://u:p@h:5432/db"))
+        self.assertIsNone(repaired_database_url("not-a-url"))
+        self.assertIsNone(repaired_database_url(""))
+
+    def test_healthy_outcome_triggers_no_repairs(self):
+        from apps.deploy.cloud_setup import _auto_repair
+
+        outcome = {"checks": [{"id": "stripe_webhook", "status": "pass"}, {"id": "database", "status": "pass"}], "railway": {}}
+        self.assertEqual(_auto_repair(None, outcome), [])
+
+    def test_missing_webhook_is_registered(self):
+        from apps.deploy import cloud_setup
+
+        outcome = {"checks": [{"id": "stripe_webhook", "status": "fail"}], "railway": {}}
+        with patch.object(cloud_setup, "get_secret", return_value="sk_test"), patch.object(
+            cloud_setup, "register_webhook", return_value={"endpointId": "we_1"}
+        ) as register:
+            repairs = cloud_setup._auto_repair(None, outcome)
+        register.assert_called_once()
+        self.assertEqual(repairs[0]["repair"], "register_stripe_webhook")
+        self.assertTrue(repairs[0]["ok"])
