@@ -161,7 +161,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "name": "PC Checker Extreme",
         "productionUrl": "https://pc-checker-extreme-production.up.railway.app",
         "webhookPath": "/stripe/webhook",
-        "healthPath": "/health/",
+        "healthPath": "/api/health/",
         "projectSlug": "pc-checker-extreme",
     },
     {

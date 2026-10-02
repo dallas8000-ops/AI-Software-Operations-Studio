@@ -9,6 +9,8 @@ creates domains, or writes files.
 
 from __future__ import annotations
 
+import re
+
 import os
 import urllib.error
 import urllib.request
@@ -248,15 +250,14 @@ def verify_project(project: Project) -> dict[str, Any]:
             status_value, message = _webhook_check(secret_key, _join(base_url, webhook_path))
             checks.append(_check("stripe_webhook", "Stripe webhook", status_value, message))
 
-    has_db = bool(value("DATABASE_URL"))
-    checks.append(
-        _check(
-            "database",
-            "Database",
-            "pass" if has_db else "warn",
-            "DATABASE_URL is set" if has_db else "DATABASE_URL not set on the app's Railway service",
-        )
-    )
+    db_url = value("DATABASE_URL")
+    if not db_url:
+        db_status, db_msg = "warn", "DATABASE_URL not set on the app's Railway service"
+    elif not re.match(r"^(postgres(ql)?|mysql|mariadb|redis|mongodb(\+srv)?)://", db_url, re.I):
+        db_status, db_msg = "fail", "DATABASE_URL is malformed (does not start with a valid scheme such as postgresql://)"
+    else:
+        db_status, db_msg = "pass", "DATABASE_URL is set"
+    checks.append(_check("database", "Database", db_status, db_msg))
 
     if base_url:
         ok, message = _health_check(_join(base_url, str(entry.get("healthPath") or "/")))
