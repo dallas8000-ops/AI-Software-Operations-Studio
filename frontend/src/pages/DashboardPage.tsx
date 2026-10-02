@@ -72,6 +72,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     load();
+    const refresh = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", refresh);
+    const timer = window.setInterval(refresh, 60000);
+    return () => { document.removeEventListener("visibilitychange", refresh); window.clearInterval(timer); };
   }, []);
 
   async function onCreate(e: FormEvent) {

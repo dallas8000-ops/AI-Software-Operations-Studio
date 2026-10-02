@@ -21,7 +21,13 @@ export default function OperationsPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const refresh = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", refresh);
+    const timer = window.setInterval(refresh, 60000);
+    return () => { document.removeEventListener("visibilitychange", refresh); window.clearInterval(timer); };
+  }, []);
 
   return (
     <div className="page operations-page">
