@@ -40,7 +40,24 @@ def _post(token: str, body: dict, *, header_style: str) -> tuple[int, dict | str
 
 
 def railway_gql(token: str, query: str, variables: dict | None = None) -> dict:
-    """Run GraphQL query/mutation; returns the `data` object."""
+    """Run GraphQL query/mutation; returns the `data` object.
+
+    A stale stored token that Railway rejects falls back to the logged-in CLI token.
+    """
+    try:
+        return _railway_gql(token, query, variables)
+    except RuntimeError as exc:
+        if "not authorized" not in str(exc).lower():
+            raise
+        from apps.vault.railway_cli import railway_cli_token
+
+        cli = railway_cli_token()
+        if not cli or cli == token:
+            raise
+        return _railway_gql(cli, query, variables)
+
+
+def _railway_gql(token: str, query: str, variables: dict | None = None) -> dict:
     body = {"query": query, "variables": variables or {}}
     last_error = ""
 

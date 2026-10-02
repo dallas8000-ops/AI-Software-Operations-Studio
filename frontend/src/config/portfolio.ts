@@ -16,8 +16,6 @@ export const MERGED_INTO_PROJECT_SLUGS: Record<string, string> = {
 /** Portfolio demos — not Stripe billing workspaces (hidden from Projects list). */
 export const STRIPE_EXEMPT_PROJECT_SLUGS = new Set([
   "kistie-store",
-  "blog-2",
-  "react-store-catalog",
 ]);
 
 export const DASHBOARD_HIDDEN_PROJECT_SLUGS = new Set([
@@ -64,19 +62,5 @@ export const PORTFOLIO_DEMOS = [
     productionUrl: "https://kistie-store-production.up.railway.app",
     localPath: "C:\\Software Projects\\Kristie-Store",
     note: "Women's Django SSR — Stripe exempt",
-  },
-  {
-    slug: "blog-2",
-    name: "Django REST Blog API",
-    productionUrl: "https://blog-2-production-72bc.up.railway.app",
-    localPath: "",
-    note: "Portfolio API — Stripe exempt",
-  },
-  {
-    slug: "react-store-catalog",
-    name: "React Store Catalog",
-    productionUrl: "https://react-store-catalog-1-production.up.railway.app",
-    localPath: "",
-    note: "Catalog demo — Stripe exempt",
   },
 ] as const;

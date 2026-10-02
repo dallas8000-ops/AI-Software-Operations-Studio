@@ -409,20 +409,26 @@ def ensure_railway_public_domain(
         hostname = sorted(hosts)[0]
     else:
         resolved_environment_id = environment_id or _railway_environment_id(token, project_id)
-        data = _railway_gql(
-            token,
-            """
-            mutation($input: ServiceDomainCreateInput!) {
-              serviceDomainCreate(input: $input) { domain }
-            }
-            """,
-            {
-                "input": {
-                    "serviceId": service_id,
-                    "environmentId": resolved_environment_id,
+        try:
+            data = _railway_gql(
+                token,
+                """
+                mutation($input: ServiceDomainCreateInput!) {
+                  serviceDomainCreate(input: $input) { domain }
                 }
-            },
-        )
+                """,
+                {
+                    "input": {
+                        "serviceId": service_id,
+                        "environmentId": resolved_environment_id,
+                    }
+                },
+            )
+        except RuntimeError as exc:
+            known = str((project.scan_data or {}).get("productionUrl") or "").strip()
+            if "limit for service domains" in str(exc).lower() and known:
+                return known
+            raise
         hostname = str((data.get("serviceDomainCreate") or {}).get("domain") or "").strip()
         if not hostname:
             raise RuntimeError("Railway did not return a public domain for the web service")

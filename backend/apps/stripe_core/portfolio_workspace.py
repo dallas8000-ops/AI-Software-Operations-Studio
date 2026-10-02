@@ -14,8 +14,6 @@ from apps.stripe_core.portfolio_catalog import HUB_SLUG, catalog_by_slug, catalo
 DEFAULT_LOCAL_PATHS: dict[str, str] = {
     "agripay-logistics-ai": r"C:\Software Projects\AgriPay Logistics AI",
     "kistie-store": r"C:\Software Projects\Kristie-Store",
-    "blog-2": r"C:\Software Projects\Blog-2",
-    "react-store-catalog": r"C:\Software Projects\React-Store-Catalog",
     "righand": r"C:\Software Projects\RigHand",
     "enpowercommand": r"C:\Software Projects\EnPowerCommand",
     "pc-checker-extreme": r"C:\Software Projects\PC Checker Extreme",

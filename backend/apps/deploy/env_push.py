@@ -378,7 +378,7 @@ def ensure_ai_memory_engine_railway_volume(
         created = True
     except RuntimeError as exc:
         message = str(exc).lower()
-        if not any(marker in message for marker in ("already", "exists", "mount path")):
+        if not any(marker in message for marker in ("already", "exists", "mount path", "only have one volume", "volumes attached")):
             raise
         created = False
 
@@ -700,6 +700,16 @@ def auto_push_railway_env(
     result["projectId"] = resolved_project_id
     result["serviceId"] = resolved_service_id
     result["publicUrl"] = public_url
+    try:
+        remote_vars = get_railway_env_vars(
+            token, resolved_project_id, resolved_service_id, result.get("environmentId") or _railway_environment_id(token, resolved_project_id)
+        )
+        result["remoteHasDatabaseUrl"] = bool(remote_vars.get("DATABASE_URL", "").strip())
+    except RuntimeError:
+        result["remoteHasDatabaseUrl"] = False
+    update_project_scan_data(
+        project, {"railway": {"remoteHasDatabaseUrl": result["remoteHasDatabaseUrl"]}}
+    )
     if volume_result.get("required"):
         result["volume"] = volume_result
 
