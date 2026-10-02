@@ -3,8 +3,7 @@
 Used on the hosted Studio (Railway container), where ``C:\\...`` app folders do not exist.
 Read-only against Railway and Stripe: copies existing Railway variables into the vault
 (never overwriting vault values), checks health and webhook registration, and records a
-completed PipelineRun with readiness checks. Verification never pushes env, rotates webhook secrets,
-creates domains, or writes files; ``register_webhook`` is the one explicit, confirmed repair.
+completed PipelineRun with readiness checks. After verifying, ``_auto_repair`` fixes failed checks with the Studio's own push and webhook features.
 """
 
 from __future__ import annotations
@@ -302,14 +301,79 @@ def register_webhook(project: Project) -> dict[str, Any]:
     return result
 
 
+_DB_SCHEME_PREFIX = re.compile(r"^[A-Za-z]*?((?:postgres(?:ql)?|mysql|mariadb|redis|mongodb(?:\+srv)?)://.+)$", re.I | re.S)
+
+
+def repaired_database_url(value: str) -> str | None:
+    """Strip stray characters before a valid scheme (e.g. ``URLpostgresql://``); None if not fixable."""
+    value = (value or "").strip()
+    if not value or _DB_SCHEME_PREFIX.match(value) is None or re.match(r"^(postgres|mysql|mariadb|redis|mongodb)", value, re.I):
+        return None
+    return _DB_SCHEME_PREFIX.match(value).group(1)
+
+
+def _failed(outcome: dict[str, Any], check_id: str) -> dict[str, Any] | None:
+    return next((c for c in outcome["checks"] if c["id"] == check_id and c["status"] == "fail"), None)
+
+
+def _auto_repair(project: Project, outcome: dict[str, Any]) -> list[dict[str, Any]]:
+    """Fix what verification found wrong, using the Studio's own push and webhook features.
+
+    Each repair runs only when its check fails, so a healthy app is never touched or redeployed.
+    """
+    from .env_push import _railway_environment_id, auto_push_railway_env, get_railway_env_vars, push_to_railway
+
+    repairs: list[dict[str, Any]] = []
+    railway = outcome.get("railway") or {}
+
+    def attempt(name: str, action) -> None:
+        try:
+            repairs.append({"repair": name, "ok": True, "detail": action()})
+        except Exception as exc:  # a failed repair is reported, never raised
+            repairs.append({"repair": name, "ok": False, "detail": str(exc)[:300]})
+
+    if _failed(outcome, "stripe_webhook") and get_secret(project, "STRIPE_SECRET_KEY"):
+        attempt("register_stripe_webhook", lambda: register_webhook(project))
+
+    if (_failed(outcome, "stripe_keys") or _failed(outcome, "webhook_secret")) and not repairs_has(repairs, "register_stripe_webhook"):
+        attempt("sync_vault_to_railway", lambda: auto_push_railway_env(project).get("message", "pushed"))
+
+    if _failed(outcome, "database") and railway.get("serviceId"):
+        def fix_database() -> str:
+            token = _railway_token(project)
+            if not token:
+                raise ValueError("No Railway token available")
+            env_id = railway.get("environmentId") or _railway_environment_id(token, railway["projectId"])
+            current = get_railway_env_vars(token, railway["projectId"], railway["serviceId"], env_id).get("DATABASE_URL", "")
+            fixed = repaired_database_url(current)
+            if not fixed:
+                raise ValueError("DATABASE_URL is malformed and cannot be repaired automatically")
+            push_to_railway(token, railway["projectId"], railway["serviceId"], {"DATABASE_URL": fixed}, env_id, preserve_existing=True)
+            set_secret(project, "DATABASE_URL", fixed)
+            return "Removed stray characters before the DATABASE_URL scheme"
+
+        attempt("repair_database_url", fix_database)
+    return repairs
+
+
+def repairs_has(repairs: list[dict[str, Any]], name: str) -> bool:
+    return any(r["repair"] == name for r in repairs)
+
+
 def run_cloud_setup(project: Project, *, user=None) -> PipelineRun:
     """Verify the project and record the result as a completed pipeline run."""
     started = timezone.now()
     try:
         outcome = verify_project(project)
+        repairs = _auto_repair(project, outcome)
+        if repairs:
+            repaired = verify_project(project)
+            repaired["imported"] = sorted(set(outcome["imported"]) | set(repaired["imported"]))
+            outcome = repaired
+        outcome["repairs"] = repairs
         error = ""
     except Exception as exc:  # recorded on the run instead of a 500
-        outcome = {"checks": [], "imported": [], "railway": {}}
+        outcome = {"checks": [], "imported": [], "railway": {}, "repairs": []}
         error = str(exc)[:500]
     score = _score(outcome["checks"])
     return PipelineRun.objects.create(
@@ -322,6 +386,7 @@ def run_cloud_setup(project: Project, *, user=None) -> PipelineRun:
             "readiness": {"score": score, "checks": outcome["checks"]},
             "importedKeys": outcome["imported"],
             "railway": outcome["railway"],
+            "repairs": outcome.get("repairs", []),
         },
         error_message=error,
         readiness_score=None if error else score,
