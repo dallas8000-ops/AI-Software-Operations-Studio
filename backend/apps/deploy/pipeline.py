@@ -13,7 +13,7 @@ from apps.stripe_core.events import EventEmitter, PipelineEvent, emit
 from apps.stripe_core.pipeline import PipelineOptions, PipelineResult, run_pipeline
 from apps.stripe_core.portfolio_catalog import catalog_by_slug
 from apps.stripe_core.readiness import readiness_label
-from apps.stripe_core.portfolio_catalog import is_stripe_exempt_slug
+from apps.stripe_core.portfolio_catalog import DATABASE_OPTIONAL_SLUGS, is_stripe_exempt_slug
 
 from .config import config_from_project, sync_project_from_config, write_deploy_config
 from .infra import generate_and_write_infra
@@ -21,6 +21,7 @@ from .platform import detect_deploy_platform, health_check_path, platform_deploy
 from .platform_push import push_to_platform
 from .postgres import get_database_url, get_production_url, is_testable_database_url, test_postgres_connection
 from .provision import provision_postgres, should_skip_external_postgres_for_railway
+
 
 
 def format_readiness_report(checks: list[dict[str, Any]], score: int) -> str:
@@ -246,7 +247,13 @@ def run_deploy_pipeline(
                 ),
             )
             next_steps.insert(0, env_push_result.get("message", "Railway env vars updated"))
-            if platform == "railway" and "DATABASE_URL" not in pushed and not get_database_url(project):
+            if (
+                platform == "railway"
+                and "DATABASE_URL" not in pushed
+                and not env_push_result.get("remoteHasDatabaseUrl")
+                and (project.slug or "").strip().lower() not in DATABASE_OPTIONAL_SLUGS
+                and not get_database_url(project)
+            ):
                 deploy_blockers.append(
                     "Railway env push did not include DATABASE_URL — add Postgres service in Railway "
                     "or store DATABASE_URL in vault"

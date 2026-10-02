@@ -54,10 +54,7 @@ PORTFOLIO_LIVE_URLS: dict[str, str] = {
     "agripayLogistics": "https://agripay-api-production.up.railway.app/demo",
     "eliteFintech": "https://elite-fintech-web-production.up.railway.app/demo",
     "kistieStore": "https://kistie-store-production.up.railway.app",
-    "silverfox": "https://silverfox-production.up.railway.app",
-    "blogApi": "https://blog-2-production-72bc.up.railway.app",
     "pcCheckerExtreme": "https://pc-checker-extreme-production.up.railway.app",
-    "reactStoreCatalog": "https://react-store-catalog-1-production.up.railway.app",
     "righandFrontend": "https://righand-production.up.railway.app",
     "dbopsWeb": "https://dbops-web-production.up.railway.app",
     "specwrightWeb": "https://specwright-web-production.up.railway.app",
@@ -73,10 +70,7 @@ PORTFOLIO_LIVE_URL_SLUGS: dict[str, str] = {
     "agripayLogistics": "agripay-logistics-ai",
     "eliteFintech": "elite-fintech-systems",
     "kistieStore": "kistie-store",
-    "silverfox": "silverfox",
-    "blogApi": "blog-2",
     "pcCheckerExtreme": "pc-checker-extreme",
-    "reactStoreCatalog": "react-store-catalog",
     "righandFrontend": "righand",
     "dbopsWeb": "dbops-control-center",
     "specwrightWeb": "specwright",
@@ -84,12 +78,14 @@ PORTFOLIO_LIVE_URL_SLUGS: dict[str, str] = {
     "marketingSiteRailway": "frontlinedigital",
 }
 
+# Apps that run without a Railway Postgres (file/SQLite/external DB).
+DATABASE_OPTIONAL_SLUGS: frozenset[str] = frozenset(
+    {"specwright", "dbops-control-center", "ai-memory-engine"}
+)
+
 STRIPE_EXEMPT_SLUGS: frozenset[str] = frozenset(
     {
         "kistie-store",
-        "silverfox",
-        "blog-2",
-        "react-store-catalog",
     }
 )
 
@@ -112,7 +108,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
     {
         "id": "automation-center",
         "name": "Deployment & Stripe Automation Center",
-        "productionUrl": HUB_API_URL,
+        "productionUrl": "https://stripe-installer.gilliomfrontlinedigital.com",
         "webProductionUrl": HUB_WEB_URL,
         "webhookPath": HUB_WEBHOOK_PATH,
         "healthPath": "/health/",
@@ -146,16 +142,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "notes": "Portfolio exempt — no Stripe subscription billing",
     },
     {
-        "id": "silverfox",
-        "name": "SilverFox",
-        "productionUrl": "https://silverfox-production.up.railway.app",
-        "healthPath": "/health/",
-        "projectSlug": "silverfox",
-        "defaultLocalPath": r"C:\Software Projects\SilverFox",
-        "stripeExempt": True,
-        "notes": "Men's fashion e-commerce — Django SSR, live FX, Stripe checkout planned",
-    },
-    {
         "id": "agripay-logistics",
         "name": "AgriPay Logistics AI",
         "productionUrl": "https://agripay-api-production.up.railway.app",
@@ -165,27 +151,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "projectSlug": "agripay-logistics-ai",
         "defaultLocalPath": r"C:\Software Projects\AgriPay Logistics AI",
         "notes": "Django API + React — mobile money + Stripe subscription billing",
-    },
-    {
-        "id": "blog-api",
-        "name": "Django REST Blog API",
-        "productionUrl": "https://blog-2-production-72bc.up.railway.app",
-        "healthPath": "/health/",
-        "projectSlug": "blog-2",
-        "defaultLocalPath": r"C:\Software Projects\Blog-2",
-        "stripeExempt": True,
-        "notes": "Portfolio exempt — content API, no paid Stripe catalog",
-    },
-    {
-        "id": "react-store-catalog",
-        "name": "React Store Catalog",
-        "productionUrl": "https://react-store-catalog-1-production.up.railway.app",
-        "webhookPath": "/api/stripe/webhook",
-        "healthPath": "/health/",
-        "projectSlug": "react-store-catalog",
-        "defaultLocalPath": r"C:\Software Projects\React-Store-Catalog",
-        "stripeExempt": True,
-        "notes": "Portfolio exempt — catalog demo, not a paid Stripe product",
     },
     {
         "id": "righand",
@@ -208,7 +173,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
     {
         "id": "dbops",
         "name": "DBOps Control Center",
-        "productionUrl": "https://dbops-control-center-production.up.railway.app",
+        "productionUrl": "https://dbops.gilliomfrontlinedigital.com",
         "webhookPath": "/billing/webhook",
         "healthPath": "/health",
         "projectSlug": "dbops-control-center",
@@ -233,6 +198,26 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "healthPath": "/health/",
         "projectSlug": "enpowercommand",
         "defaultLocalPath": r"C:\Software Projects\EnPowerCommand",
+    },
+    {
+        "id": "ai-memory-engine",
+        "name": "AI Memory Engine",
+        "productionUrl": "https://ai-memory-engine-production.up.railway.app",
+        "healthPath": "/health/",
+        "projectSlug": "ai-memory-engine",
+        "defaultLocalPath": r"C:\Software Projects\AI Memory Engine",
+        "stripeExempt": True,
+        "notes": "Semantic-memory API — no Stripe billing",
+    },
+    {
+        "id": "digital-sales-automation-center",
+        "name": "Digital Sales Automation Center",
+        "productionUrl": "https://digital-sales-automation-center-production.up.railway.app",
+        "healthPath": "/health/",
+        "projectSlug": "digital-sales-automation-center",
+        "defaultLocalPath": r"C:\Software Projects\Digital Sales Automation Center",
+        "stripeExempt": True,
+        "notes": "Portfolio app — no Stripe billing",
     },
     {
         "id": "elite-fintech-web-legacy",

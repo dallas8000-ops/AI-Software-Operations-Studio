@@ -16,7 +16,7 @@
     {
       "id": "automation-center",
       "name": "Deployment & Stripe Automation Center",
-      "productionUrl": "https://api.gilliomfrontlinedigital.com",
+      "productionUrl": "https://stripe-installer.gilliomfrontlinedigital.com",
       "webProductionUrl": "https://studio.gilliomfrontlinedigital.com",
       "webhookPath": "/api/v1/billing/webhook/",
       "healthPath": "/health/",
@@ -51,18 +51,6 @@
       "notes": "Portfolio exempt \u2014 no Stripe subscription billing"
     },
     {
-      "id": "silverfox",
-      "name": "SilverFox",
-      "productionUrl": "https://silverfox-production.up.railway.app",
-      "webhookPath": "/stripe/webhook",
-      "healthPath": "/health/",
-      "projectSlug": "silverfox",
-      "localPath": "C:\\Software Projects\\SilverFox",
-      "transferAllowedTo": [],
-      "stripeExempt": true,
-      "notes": "Men's fashion e-commerce \u2014 Django SSR, live FX, Stripe checkout planned"
-    },
-    {
       "id": "agripay-logistics",
       "name": "AgriPay Logistics AI",
       "productionUrl": "https://agripay-api-production.up.railway.app",
@@ -73,30 +61,6 @@
       "transferAllowedTo": [],
       "stripeExempt": false,
       "notes": "Django API + React \u2014 mobile money + Stripe subscription billing"
-    },
-    {
-      "id": "blog-api",
-      "name": "Django REST Blog API",
-      "productionUrl": "https://blog-2-production-72bc.up.railway.app",
-      "webhookPath": "/stripe/webhook",
-      "healthPath": "/health/",
-      "projectSlug": "blog-2",
-      "localPath": "C:\\Software Projects\\Blog-2",
-      "transferAllowedTo": [],
-      "stripeExempt": true,
-      "notes": "Portfolio exempt \u2014 content API, no paid Stripe catalog"
-    },
-    {
-      "id": "react-store-catalog",
-      "name": "React Store Catalog",
-      "productionUrl": "https://react-store-catalog-1-production.up.railway.app",
-      "webhookPath": "/api/stripe/webhook",
-      "healthPath": "/health/",
-      "projectSlug": "react-store-catalog",
-      "localPath": "C:\\Software Projects\\React-Store-Catalog",
-      "transferAllowedTo": [],
-      "stripeExempt": true,
-      "notes": "Portfolio exempt \u2014 catalog demo, not a paid Stripe product"
     },
     {
       "id": "righand",
