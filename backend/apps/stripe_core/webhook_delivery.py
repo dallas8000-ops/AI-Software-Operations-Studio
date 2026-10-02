@@ -181,7 +181,9 @@ def probe_signed_webhook(
     signature = _sign_payload(payload, whsec)
     normalized = expected if expected.endswith("/") else f"{expected}/"
 
-    for attempt_url in (normalized, normalized.rstrip("/")):
+    attempts = (expected, normalized if not expected.endswith("/") else expected.rstrip("/"))
+    not_found: SignatureProbe | None = None
+    for attempt_url in attempts:
         try:
             req = Request(
                 attempt_url,
@@ -208,7 +210,7 @@ def probe_signed_webhook(
         except HTTPError as exc:
             body = exc.read(300).decode("utf-8", errors="replace") if exc.fp else ""
             classification, signature_valid = _classify_probe_status(exc.code, body)
-            return SignatureProbe(
+            result = SignatureProbe(
                 url=attempt_url,
                 httpStatus=exc.code,
                 classification=classification,
@@ -216,11 +218,17 @@ def probe_signed_webhook(
                 reachable=True,
                 bodySnippet=body[:120],
             )
+            if classification == "route_missing":
+                not_found = result  # the other slash form may be the real route
+                continue
+            return result
         except URLError:
             continue
         except Exception:
             continue
 
+    if not_found:
+        return not_found
     return SignatureProbe(
         url=expected,
         httpStatus=None,
