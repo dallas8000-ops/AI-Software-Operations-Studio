@@ -20,7 +20,12 @@ from django.utils import timezone
 
 from apps.projects.models import Project
 from apps.runs.models import PipelineRun
-from apps.stripe_core.portfolio_catalog import PORTFOLIO_CATALOG, CatalogEntry, is_stripe_exempt_slug
+from apps.stripe_core.portfolio_catalog import (
+    DATABASE_OPTIONAL_SLUGS,
+    PORTFOLIO_CATALOG,
+    CatalogEntry,
+    is_stripe_exempt_slug,
+)
 from apps.vault.import_env import is_importable_key
 from apps.vault.models import get_secret, set_secret
 
@@ -74,6 +79,17 @@ def _host(url: str) -> str:
 def _join(base: str, path: str) -> str:
     path = path if path.startswith("/") else f"/{path}"
     return f"{base.rstrip('/')}{path}"
+
+
+def _database_setting(value, variables: dict[str, str]) -> tuple[str, str]:
+    """DATABASE_URL, or an app-prefixed one such as SPECWRIGHT_DATABASE_URL."""
+    direct = value("DATABASE_URL")
+    if direct:
+        return "DATABASE_URL", direct
+    for key in sorted(variables):
+        if key.endswith("_DATABASE_URL") and str(variables.get(key) or "").strip():
+            return key, str(variables[key]).strip()
+    return "DATABASE_URL", ""
 
 
 def _find_railway_service(token: str, entry: CatalogEntry) -> tuple[str | None, str | None, str]:
@@ -275,13 +291,21 @@ def verify_project(project: Project) -> dict[str, Any]:
                     _check("stripe_catalog", "Stripe products", "pass", f"All {len(tiers)} tier product(s) exist in Stripe")
                 )
 
-    db_url = value("DATABASE_URL")
+    db_key, db_url = _database_setting(value, variables if railway else {})
     if not db_url:
-        db_status, db_msg = "warn", "DATABASE_URL not set on the app's Railway service"
+        if (entry.get("projectSlug") or "") in DATABASE_OPTIONAL_SLUGS:
+            db_status, db_msg = "pass", "This app does not use a database"
+        else:
+            db_status, db_msg = "warn", "DATABASE_URL not set on the app's Railway service"
+    elif db_url.lower().startswith("sqlite"):
+        if "///" in db_url and re.match(r"^sqlite[^:]*:/{4}(data|app/data)/", db_url, re.I):
+            db_status, db_msg = "pass", f"{db_key} is SQLite on an absolute path (needs a mounted volume to persist)"
+        else:
+            db_status, db_msg = "warn", f"{db_key} is a SQLite file on the container's disk, which is wiped on every deploy"
     elif not re.match(r"^(postgres(ql)?|mysql|mariadb|redis|mongodb(\+srv)?)://", db_url, re.I):
         db_status, db_msg = "fail", "DATABASE_URL is malformed (does not start with a valid scheme such as postgresql://)"
     else:
-        db_status, db_msg = "pass", "DATABASE_URL is set"
+        db_status, db_msg = "pass", f"{db_key} is set"
     checks.append(_check("database", "Database", db_status, db_msg))
 
     if base_url:

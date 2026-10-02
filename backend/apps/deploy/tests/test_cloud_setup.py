@@ -137,6 +137,29 @@ class CloudSetupTests(TestCase):
         self.assertEqual(response.data["score"], 100)
         self.assertTrue(response.data["checks"])
 
+    def _database_check(self, variables, slug="righand"):
+        self.project.slug = slug
+        self.project.save()
+        with patch("apps.deploy.env_push.get_railway_env_vars", return_value=variables):
+            run = run_cloud_setup(self.project, user=self.user)
+        return next(c for c in run.result["readiness"]["checks"] if c["id"] == "database")
+
+    def test_app_prefixed_database_url_counts(self, *_):
+        variables = {**RAILWAY_VARS, "SPECWRIGHT_DATABASE_URL": "sqlite+aiosqlite:////data/specwright.db"}
+        del variables["DATABASE_URL"]
+        check = self._database_check(variables)
+        self.assertEqual(check["status"], "pass")
+        self.assertIn("SPECWRIGHT_DATABASE_URL", check["message"])
+
+    def test_sqlite_on_ephemeral_disk_warns(self, *_):
+        variables = {**RAILWAY_VARS, "DATABASE_URL": "sqlite+aiosqlite:///specwright.db"}
+        self.assertEqual(self._database_check(variables)["status"], "warn")
+
+    def test_app_without_database_passes_when_optional(self, *_):
+        variables = {k: v for k, v in RAILWAY_VARS.items() if k != "DATABASE_URL"}
+        self.assertEqual(self._database_check(variables, slug="frontlinedigital")["status"], "pass")
+        self.assertEqual(self._database_check(variables, slug="righand")["status"], "warn")
+
 
 class AutoRepairTests(TestCase):
     def test_repairs_stray_prefix_before_scheme(self):
