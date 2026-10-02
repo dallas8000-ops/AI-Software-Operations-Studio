@@ -54,7 +54,6 @@ PORTFOLIO_LIVE_URLS: dict[str, str] = {
     "agripayLogistics": "https://agripay-api-production.up.railway.app/demo",
     "eliteFintech": "https://elite-fintech-web-production.up.railway.app/demo",
     "kistieStore": "https://kistie-store-production.up.railway.app",
-    "silverfox": "https://silverfox-production.up.railway.app",
     "blogApi": "https://blog-2-production-72bc.up.railway.app",
     "pcCheckerExtreme": "https://pc-checker-extreme-production.up.railway.app",
     "reactStoreCatalog": "https://react-store-catalog-1-production.up.railway.app",
@@ -73,7 +72,6 @@ PORTFOLIO_LIVE_URL_SLUGS: dict[str, str] = {
     "agripayLogistics": "agripay-logistics-ai",
     "eliteFintech": "elite-fintech-systems",
     "kistieStore": "kistie-store",
-    "silverfox": "silverfox",
     "blogApi": "blog-2",
     "pcCheckerExtreme": "pc-checker-extreme",
     "reactStoreCatalog": "react-store-catalog",
@@ -87,7 +85,6 @@ PORTFOLIO_LIVE_URL_SLUGS: dict[str, str] = {
 STRIPE_EXEMPT_SLUGS: frozenset[str] = frozenset(
     {
         "kistie-store",
-        "silverfox",
         "blog-2",
         "react-store-catalog",
     }
@@ -144,16 +141,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "defaultLocalPath": r"C:\Software Projects\Kristie-Store",
         "stripeExempt": True,
         "notes": "Portfolio exempt — no Stripe subscription billing",
-    },
-    {
-        "id": "silverfox",
-        "name": "SilverFox",
-        "productionUrl": "https://silverfox-production.up.railway.app",
-        "healthPath": "/health/",
-        "projectSlug": "silverfox",
-        "defaultLocalPath": r"C:\Software Projects\SilverFox",
-        "stripeExempt": True,
-        "notes": "Men's fashion e-commerce — Django SSR, live FX, Stripe checkout planned",
     },
     {
         "id": "agripay-logistics",

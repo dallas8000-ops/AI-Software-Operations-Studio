@@ -16,7 +16,6 @@ export const MERGED_INTO_PROJECT_SLUGS: Record<string, string> = {
 /** Portfolio demos — not Stripe billing workspaces (hidden from Projects list). */
 export const STRIPE_EXEMPT_PROJECT_SLUGS = new Set([
   "kistie-store",
-  "silverfox",
   "blog-2",
   "react-store-catalog",
 ]);
@@ -59,13 +58,6 @@ export const PLATFORM_PROJECT = {
 
 /** Portfolio storefront demos — hidden from billing list but managed here for Railway deploy. */
 export const PORTFOLIO_DEMOS = [
-  {
-    slug: "silverfox",
-    name: "SilverFox",
-    productionUrl: "https://silverfox-production.up.railway.app",
-    localPath: "C:\\Software Projects\\SilverFox",
-    note: "Men's Django SSR — Stripe exempt",
-  },
   {
     slug: "kistie-store",
     name: "Kistie Store",

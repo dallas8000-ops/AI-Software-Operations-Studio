@@ -51,18 +51,6 @@
       "notes": "Portfolio exempt \u2014 no Stripe subscription billing"
     },
     {
-      "id": "silverfox",
-      "name": "SilverFox",
-      "productionUrl": "https://silverfox-production.up.railway.app",
-      "webhookPath": "/stripe/webhook",
-      "healthPath": "/health/",
-      "projectSlug": "silverfox",
-      "localPath": "C:\\Software Projects\\SilverFox",
-      "transferAllowedTo": [],
-      "stripeExempt": true,
-      "notes": "Men's fashion e-commerce \u2014 Django SSR, live FX, Stripe checkout planned"
-    },
-    {
       "id": "agripay-logistics",
       "name": "AgriPay Logistics AI",
       "productionUrl": "https://agripay-api-production.up.railway.app",

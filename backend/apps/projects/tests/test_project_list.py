@@ -11,7 +11,7 @@ class ProjectListTests(APITestCase):
             email="portfolio-list@example.com", password="test-pass-123"
         )
         Project.objects.create(owner=self.user, name="Managed App", slug="managed-app")
-        Project.objects.create(owner=self.user, name="SilverFox", slug="silverfox")
+        Project.objects.create(owner=self.user, name="Kistie Store", slug="kistie-store")
         self.client.force_authenticate(self.user)
 
     def test_portfolio_projects_are_available_only_when_requested(self):
@@ -25,7 +25,7 @@ class ProjectListTests(APITestCase):
         self.assertEqual(complete_response.status_code, 200)
         self.assertEqual(
             {row["slug"] for row in complete_response.data},
-            {"managed-app", "silverfox"},
+            {"managed-app", "kistie-store"},
         )
 
     def test_archived_projects_are_hidden_by_default_and_can_be_restored(self):
