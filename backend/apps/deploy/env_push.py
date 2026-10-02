@@ -285,22 +285,27 @@ def push_to_railway(
             "addedKeys": sorted(set(env_vars) - set(existing)),
         }
 
-    _railway_gql(
-        token,
-        "mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
-        {
-            "input": {
-                "projectId": project_id,
-                "serviceId": service_id,
-                "environmentId": environment_id,
-                "variables": upsert_vars,
-            }
-        },
-    )
+    changed = True
+    if preserve_existing:
+        changed = any(existing.get(k) != v for k, v in upsert_vars.items())
+    if changed:
+        _railway_gql(
+            token,
+            "mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
+            {
+                "input": {
+                    "projectId": project_id,
+                    "serviceId": service_id,
+                    "environmentId": environment_id,
+                    "variables": upsert_vars,
+                }
+            },
+        )
     return {
         "pushed": sorted(env_vars.keys()),
         "environmentId": environment_id,
         "merge": merge_meta,
+        "changed": changed,
     }
 
 
@@ -721,6 +726,7 @@ def auto_push_railway_env(
             token,
             resolved_project_id,
             resolved_service_id,
+            trigger_deploy=bool(result.get("changed", True)),
         )
         result["railwayDeploy"] = deploy_result
         if deploy_result.get("deployTriggered"):
