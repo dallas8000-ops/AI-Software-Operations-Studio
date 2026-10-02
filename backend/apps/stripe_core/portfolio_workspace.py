@@ -13,10 +13,7 @@ from apps.stripe_core.portfolio_catalog import HUB_SLUG, catalog_by_slug, catalo
 # Windows dev paths — match portfolio repo locations on Ray's machine.
 DEFAULT_LOCAL_PATHS: dict[str, str] = {
     "agripay-logistics-ai": r"C:\Software Projects\AgriPay Logistics AI",
-    "silverfox": r"C:\Software Projects\SilverFox",
     "kistie-store": r"C:\Software Projects\Kristie-Store",
-    "blog-2": r"C:\Software Projects\Blog-2",
-    "react-store-catalog": r"C:\Software Projects\React-Store-Catalog",
     "righand": r"C:\Software Projects\RigHand",
     "enpowercommand": r"C:\Software Projects\EnPowerCommand",
     "pc-checker-extreme": r"C:\Software Projects\PC Checker Extreme",
@@ -198,14 +195,6 @@ def repair_portfolio_local_path(project: Project, *, save: bool = True) -> tuple
     return target, current != target
 
 
-def _can_use_server_workspace(project: Project) -> bool:
-    return bool(
-        getattr(settings, "SERVER_WORKSPACES_ENABLED", False)
-        and project.slug != HUB_SLUG
-        and (project.git_url or "").strip()
-    )
-
-
 def require_project_folder(project: Project) -> Path:
     """Resolved, existing project root — raises if missing or inside the hub repo."""
     repair_portfolio_local_path(project)
@@ -213,10 +202,6 @@ def require_project_folder(project: Project) -> Path:
     if err:
         raise ValueError(err)
     root = Path(resolve_workspace_path(project) or project.local_path or "")
-    if not root.is_dir() and _can_use_server_workspace(project):
-        from apps.projects.git_clone import clone_to_server_workspace
-
-        return clone_to_server_workspace(project)
     if not root.is_dir():
         raise FileNotFoundError(
             f"Project folder not found: {root}. Open that folder in your editor and clone the repo there manually."

@@ -12,7 +12,6 @@ from __future__ import annotations
 import os
 import urllib.error
 import urllib.request
-from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -28,9 +27,8 @@ HEALTH_TIMEOUT_SECONDS = 10
 
 
 def needs_cloud_setup(project: Project) -> bool:
-    """True when this server cannot see the project's folder (hosted Studio)."""
-    path = (project.local_path or "").strip()
-    return not path or not Path(path).expanduser().is_dir()
+    """Readiness always comes from Railway and the live URL, never from a local folder."""
+    return True
 
 
 def catalog_entry_for(project: Project) -> CatalogEntry | None:

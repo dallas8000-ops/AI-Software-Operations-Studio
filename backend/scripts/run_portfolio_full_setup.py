@@ -21,7 +21,7 @@ from apps.deploy.pipeline import DeployOptions, run_deploy_pipeline
 from apps.deploy.platform_bootstrap import bootstrap_platform_automation
 from apps.projects.models import Project
 from apps.stripe_core.hub_keys import HUB_SLUG
-from apps.stripe_core.portfolio_catalog import is_stripe_exempt_slug, stripe_billing_apps
+from apps.stripe_core.portfolio_catalog import PORTFOLIO_CATALOG, is_stripe_exempt_slug
 
 EMAIL = "dallas8000@gmail.com"
 
@@ -73,12 +73,20 @@ def main() -> int:
         mark = "OK" if row.get("ok") else "FAIL"
         print(f"  [{mark}] {row['slug']}")
 
-    slugs = [HUB_SLUG] + [e["projectSlug"] for e in stripe_billing_apps() if e["projectSlug"] != HUB_SLUG]
-    exempt = ["blog-2", "kistie-store", "silverfox"]
-    for s in exempt:
-        if Project.objects.filter(slug=s, owner=user).exists() and s not in slugs:
-            slugs.append(s)
-
+    slugs = [HUB_SLUG]
+    for entry in PORTFOLIO_CATALOG:
+        slug = entry.get("projectSlug")
+        if not slug or entry.get("merged") or slug in slugs:
+            continue
+        project = Project.objects.filter(slug=slug, owner=user).first()
+        if project is None:
+            local = entry.get("defaultLocalPath") or ""
+            if not local or not Path(local).is_dir():
+                print(f"  SKIP {slug}: not in Studio and local folder not found ({local or 'no path'})")
+                continue
+            Project.objects.create(owner=user, slug=slug, name=entry.get("name") or slug, local_path=local)
+            print(f"  CREATED project {slug} -> {local}")
+        slugs.append(slug)
     print("\n=== 2) Full setup (deploy pipeline) per app ===\n")
     results: list[tuple[str, dict]] = []
     for slug in slugs:

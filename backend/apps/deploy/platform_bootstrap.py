@@ -413,11 +413,22 @@ def bootstrap_platform_automation(hub: Project, *, user) -> dict[str, Any]:
     for project in Project.objects.filter(owner=hub.owner).order_by("slug"):
         if project.slug == HUB_SLUG or is_merged_legacy_slug(project.slug):
             continue
-        repair_portfolio_local_path(project)
-        hydrate_project_vault(project)
-        repair_project_vault_from_hub(project, hub)
-        sync_deploy_platform_from_disk(project)
-        deploy_result = automate_project_deploy(project, user=user)
+        try:
+            repair_portfolio_local_path(project)
+            hydrate_project_vault(project)
+            repair_project_vault_from_hub(project, hub)
+            sync_deploy_platform_from_disk(project)
+            deploy_result = automate_project_deploy(project, user=user)
+        except (FileNotFoundError, RuntimeError, ValueError) as exc:
+            project_results.append(
+                {
+                    "slug": project.slug,
+                    "ok": False,
+                    "platform": "unknown",
+                    "steps": [{"step": "bootstrap", "ok": False, "detail": str(exc)}],
+                }
+            )
+            continue
         project_results.append(
             {
                 "slug": project.slug,

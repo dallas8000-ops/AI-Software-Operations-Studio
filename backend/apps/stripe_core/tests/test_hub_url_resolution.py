@@ -39,5 +39,5 @@ class HubUrlResolutionTests(TestCase):
     def test_hub_webhook_is_installer_only(self):
         hub = Project(slug="stripe-installer", framework="django")
         url = resolve_expected_webhook_url(hub)
-        self.assertIn("api.gilliomfrontlinedigital.com", url)
+        self.assertIn("stripe-installer.gilliomfrontlinedigital.com", url)
         self.assertIn("/api/v1/billing/webhook", url)
