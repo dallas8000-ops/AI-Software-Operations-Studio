@@ -102,7 +102,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": "/stripe/webhook",
         "healthPath": "/api/v1/health/",
         "projectSlug": "eastbridge-ops",
-        "defaultLocalPath": r"C:\Software Projects\EastBridge Ops Intelligence",
         "notes": "EU→East Africa compliance, trade, vendor intelligence — monorepo Django+React on Railway",
     },
     {
@@ -113,7 +112,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": HUB_WEBHOOK_PATH,
         "healthPath": "/health/",
         "projectSlug": "stripe-installer",
-        "defaultLocalPath": r"C:\Software Projects\Deployment-Stripe-center",
         "notes": "Studio web at studio.* — API + webhooks at api.* (same Railway service, two custom domains)",
     },
         {
@@ -125,7 +123,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
             "webhookPath": "/webhooks/stripe/",
             "healthPath": "/health/",
             "projectSlug": "elite-fintech-systems",
-            "defaultLocalPath": r"C:\Software Projects\Elite Fintech Systems",
             "notes": (
                 "One Railway project (portfolio hub) — three services: "
                 "elite-fintech-systems-api, -web, -db. Same monorepo, not a separate project."
@@ -137,7 +134,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "productionUrl": "https://kistie-store-production.up.railway.app",
         "healthPath": "/health/",
         "projectSlug": "kistie-store",
-        "defaultLocalPath": r"C:\Software Projects\Kristie-Store",
         "stripeExempt": True,
         "notes": "Portfolio exempt — no Stripe subscription billing",
     },
@@ -149,7 +145,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": "/webhooks/stripe/",
         "healthPath": "/health/",
         "projectSlug": "agripay-logistics-ai",
-        "defaultLocalPath": r"C:\Software Projects\AgriPay Logistics AI",
         "notes": "Django API + React — mobile money + Stripe subscription billing",
     },
     {
@@ -159,7 +154,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": "/api/v1/billing/webhook/",
         "healthPath": "/health/",
         "projectSlug": "righand",
-        "defaultLocalPath": r"C:\Software Projects\RigHand",
     },
     {
         "id": "pc-checker-extreme",
@@ -168,7 +162,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": "/stripe/webhook",
         "healthPath": "/health/",
         "projectSlug": "pc-checker-extreme",
-        "defaultLocalPath": r"C:\Software Projects\PC Checker Extreme",
     },
     {
         "id": "dbops",
@@ -177,7 +170,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": "/billing/webhook",
         "healthPath": "/health",
         "projectSlug": "dbops-control-center",
-        "defaultLocalPath": r"C:\Software Projects\DBOps-Control-Center",
         "notes": "Webhook on API service (not dbops-web frontend)",
     },
     {
@@ -187,7 +179,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": "/api/v1/billing/webhook",
         "healthPath": "/api/v1/health",
         "projectSlug": "specwright",
-        "defaultLocalPath": r"C:\Software Projects\Specwright",
         "notes": "Webhook on API service (not specwright-web frontend)",
     },
     {
@@ -197,7 +188,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "webhookPath": "/api/billing/webhook",
         "healthPath": "/health/",
         "projectSlug": "enpowercommand",
-        "defaultLocalPath": r"C:\Software Projects\EnPowerCommand",
     },
     {
         "id": "ai-memory-engine",
@@ -205,7 +195,6 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "productionUrl": "https://ai-memory-engine-production.up.railway.app",
         "healthPath": "/health/",
         "projectSlug": "ai-memory-engine",
-        "defaultLocalPath": r"C:\Software Projects\AI Memory Engine",
         "stripeExempt": True,
         "notes": "Semantic-memory API — no Stripe billing",
     },
@@ -215,13 +204,56 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "productionUrl": "https://digital-sales-automation-center-production.up.railway.app",
         "healthPath": "/health/",
         "projectSlug": "digital-sales-automation-center",
-        "defaultLocalPath": r"C:\Software Projects\Digital Sales Automation Center",
         "stripeExempt": True,
         "notes": "Portfolio app — no Stripe billing",
     },
     {
-        "id": "elite-fintech-web-legacy",
-        "name": "Elite Fintech Web (retired duplicate)",
+        "id": "ai-clone",
+        "name": "AI Clone",
+        "productionUrl": "https://ai-clone-api-production.up.railway.app",
+        "healthPath": "/",
+        "projectSlug": "ai-clone",
+        "stripeExempt": True,
+        "notes": "Railway project ai-clone (service ai-clone-api)",
+    },
+    {
+        "id": "nalumansi-video-maker",
+        "name": "Nalumansi Video Maker",
+        "productionUrl": "https://nalumansi-video-maker-production.up.railway.app",
+        "healthPath": "/",
+        "projectSlug": "nalumansi",
+        "stripeExempt": True,
+        "notes": "Railway project zucchini-wisdom",
+    },
+    {
+        "id": "frontline",
+        "name": "Frontline",
+        "productionUrl": "https://frontline.gilliomfrontlinedigital.com",
+        "healthPath": "/",
+        "projectSlug": "frontline",
+        "stripeExempt": True,
+        "notes": "Railway project spectacular-encouragement",
+    },
+    {
+        "id": "frontlinedigital",
+        "name": "FrontLineDigital",
+        "productionUrl": "https://gilliomfrontlinedigital.com",
+        "healthPath": "/",
+        "projectSlug": "frontlinedigital",
+        "stripeExempt": True,
+        "notes": "Marketing site, Railway service FrontLineDigital-1",
+    },
+    {
+        "id": "prolific-beauty",
+        "name": "Prolific Beauty",
+        "productionUrl": "https://prolific-beauty-production-3b65.up.railway.app",
+        "healthPath": "/",
+        "projectSlug": "prolific-beauty",
+        "stripeExempt": True,
+        "notes": "Railway service prolific-beauty (hearty-enjoyment)",
+    },
+    {
+        "id": "elite-fintech-web-legacy",        "name": "Elite Fintech Web (retired duplicate)",
         "productionUrl": "https://elite-fintech-web-production.up.railway.app",
         "webhookPath": "/api/stripe/webhook",
         "merged": True,
