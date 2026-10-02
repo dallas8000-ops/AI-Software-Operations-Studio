@@ -188,18 +188,30 @@ def verify_project(project: Project) -> dict[str, Any]:
         else:
             from .env_push import _railway_environment_id, get_railway_env_vars
 
-            environment_id = _railway_environment_id(token, project_id)
-            variables = get_railway_env_vars(token, project_id, service_id, environment_id)
-            railway = {"projectId": project_id, "serviceId": service_id, "environmentId": environment_id}
-            imported = _import_railway_vars(project, variables)
-            checks.append(
-                _check(
-                    "railway_service",
-                    "Railway service",
-                    "pass",
-                    f"Found Railway service for {host}; {len(imported)} key(s) copied into the vault",
+            try:
+                environment_id = _railway_environment_id(token, project_id)
+                variables = get_railway_env_vars(token, project_id, service_id, environment_id)
+            except Exception as exc:  # one app's Railway error must not fail the whole run
+                checks.append(
+                    _check(
+                        "railway_service",
+                        "Railway service",
+                        "fail",
+                        f"Found the service for {host} but could not read its variables: {exc}",
+                        "Check the RAILWAY_API_TOKEN has access to this service's project",
+                    )
                 )
-            )
+            else:
+                railway = {"projectId": project_id, "serviceId": service_id, "environmentId": environment_id}
+                imported = _import_railway_vars(project, variables)
+                checks.append(
+                    _check(
+                        "railway_service",
+                        "Railway service",
+                        "pass",
+                        f"Found Railway service for {host}; {len(imported)} key(s) copied into the vault",
+                    )
+                )
 
     def value(key: str) -> str:
         # The app's Railway variables are the truth once read; the vault is only a fallback
