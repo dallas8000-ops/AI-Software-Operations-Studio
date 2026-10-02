@@ -173,7 +173,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
     {
         "id": "dbops",
         "name": "DBOps Control Center",
-        "productionUrl": "https://dbops-control-center-production.up.railway.app",
+        "productionUrl": "https://dbops.gilliomfrontlinedigital.com",
         "webhookPath": "/billing/webhook",
         "healthPath": "/health",
         "projectSlug": "dbops-control-center",
