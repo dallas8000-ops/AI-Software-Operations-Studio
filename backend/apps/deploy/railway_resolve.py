@@ -86,6 +86,9 @@ def _list_railway_projects_with_domains(token: str) -> list[dict[str, Any]]:
                               serviceDomains {
                                 domain
                               }
+                              customDomains {
+                                domain
+                              }
                             }
                           }
                         }
@@ -114,7 +117,7 @@ def _list_railway_projects_with_domains(token: str) -> list[dict[str, Any]]:
             for inst_edge in (svc.get("serviceInstances") or {}).get("edges", []):
                 inst = inst_edge.get("node") or {}
                 dom_block = inst.get("domains") or {}
-                for dom in dom_block.get("serviceDomains") or []:
+                for dom in (dom_block.get("serviceDomains") or []) + (dom_block.get("customDomains") or []):
                     if isinstance(dom, dict):
                         domain = str(dom.get("domain") or dom.get("host") or "").strip().lower()
                     else:
