@@ -345,6 +345,12 @@ def resolve_railway_project_id(project: Project, token: str) -> str | None:
     ):
         return stored
 
+    if _catalog_production_host(project):
+        # The live hostname is authoritative; stored IDs may point at a deleted or different service.
+        project_id, _service_id = resolve_railway_targets_by_domain(project, token)
+        if project_id:
+            return project_id
+
     scan = project.scan_data or {}
     for key in ("railway", "postgres"):
         block = scan.get(key) or {}
@@ -373,6 +379,11 @@ def resolve_railway_web_service_id(project: Project, token: str, project_id: str
     stored = (get_secret(project, "RAILWAY_SERVICE_ID") or "").strip()
     if stored and _railway_ids_trusted_for_catalog(project, token, project_id, stored):
         return stored
+
+    if _catalog_production_host(project):
+        domain_project_id, domain_service_id = resolve_railway_targets_by_domain(project, token)
+        if domain_service_id and domain_project_id == project_id:
+            return domain_service_id
 
     scan = project.scan_data or {}
     railway = scan.get("railway") or {}
