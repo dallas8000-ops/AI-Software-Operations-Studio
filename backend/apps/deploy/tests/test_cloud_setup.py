@@ -22,6 +22,7 @@ RAILWAY_VARS = {
 @patch.dict("os.environ", {"RAILWAY_API_TOKEN": "railway-token"})
 @patch("apps.deploy.cloud_setup._health_check", return_value=(True, "HTTP 200"))
 @patch("apps.deploy.cloud_setup._webhook_check", return_value=("pass", "registered"))
+@patch("apps.deploy.cloud_setup._signed_webhook_check", return_value=("pass", "accepted"))
 @patch("apps.deploy.env_push.get_railway_env_vars", return_value=dict(RAILWAY_VARS))
 @patch("apps.deploy.env_push._railway_environment_id", return_value="env-1")
 @patch("apps.deploy.railway_resolve.resolve_railway_service_by_host", return_value=("proj-1", "svc-1"))
@@ -175,6 +176,23 @@ class AutoRepairTests(TestCase):
 
         outcome = {"checks": [{"id": "stripe_webhook", "status": "pass"}, {"id": "database", "status": "pass"}], "railway": {}}
         self.assertEqual(_auto_repair(None, outcome), [])
+
+    def test_rejected_signing_secret_rotates_the_webhook(self):
+        from apps.deploy import cloud_setup
+
+        outcome = {
+            "checks": [
+                {"id": "stripe_webhook", "status": "pass"},
+                {"id": "webhook_signature", "status": "fail", "message": "App rejected the signing secret held on Railway"},
+            ],
+            "railway": {},
+        }
+        with patch.object(cloud_setup, "get_secret", return_value="sk_test"), patch.object(
+            cloud_setup, "register_webhook", return_value={"endpointId": "we_1"}
+        ) as register:
+            repairs = cloud_setup._auto_repair(None, outcome)
+        register.assert_called_once()
+        self.assertEqual(repairs[0]["repair"], "register_stripe_webhook")
 
     def test_missing_webhook_is_registered(self):
         from apps.deploy import cloud_setup

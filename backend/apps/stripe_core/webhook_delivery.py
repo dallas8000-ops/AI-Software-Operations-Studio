@@ -160,10 +160,12 @@ def _classify_probe_status(status: int | None, body: str) -> tuple[str, bool]:
     return "unknown", False
 
 
-def probe_signed_webhook(project: Project, *, timeout: float = 12.0) -> SignatureProbe | None:
-    """POST a signed probe event to the live webhook URL using vault whsec_."""
-    expected = resolve_expected_webhook_url(project)
-    whsec = get_webhook_secret(project)
+def probe_signed_webhook(
+    project: Project, *, timeout: float = 12.0, url: str | None = None, whsec: str | None = None
+) -> SignatureProbe | None:
+    """POST a signed probe event to the live webhook URL using the vault (or supplied) whsec_."""
+    expected = url or resolve_expected_webhook_url(project)
+    whsec = (whsec or get_webhook_secret(project) or "").strip()
     if not expected or not whsec or not whsec.startswith("whsec_"):
         return None
 

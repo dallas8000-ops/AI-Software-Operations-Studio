@@ -8,6 +8,7 @@ completed PipelineRun with readiness checks. After verifying, ``_auto_repair`` f
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import time
@@ -128,11 +129,57 @@ def _health_check(url: str) -> tuple[bool, str]:
     try:
         with urllib.request.urlopen(request, timeout=HEALTH_TIMEOUT_SECONDS) as response:
             code = response.status
+            body = response.read(4000).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         code = exc.code
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return False, f"{url} unreachable ({exc})"
-    return 200 <= code < 400, f"{url} returned HTTP {code}"
+    if not 200 <= code < 400:
+        return False, f"{url} returned HTTP {code}"
+    reported = _reported_unhealthy(body)
+    if reported:
+        return False, f"{url} returned HTTP {code} but reports: {reported}"
+    return True, f"{url} returned HTTP {code}"
+
+
+def _reported_unhealthy(body: str) -> str:
+    """Return what a JSON health body says is wrong, or "" when it is healthy or not JSON."""
+    try:
+        data = json.loads(body)
+    except ValueError:
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    status = str(data.get("status", "")).strip().lower()
+    if status in {"error", "unhealthy", "down", "fail", "failed", "degraded"}:
+        return f"status={status}"
+    for key, val in data.items():
+        if key != "status" and isinstance(val, str) and val.strip().lower() in {"error", "down", "unhealthy", "fail", "failed"}:
+            return f"{key}={val.strip().lower()}"
+    return ""
+
+
+def _signed_webhook_check(url: str, whsec: str) -> tuple[str, str]:
+    """Send a signed test event to the app's webhook with the secret held on Railway."""
+    from apps.stripe_core.webhook_delivery import probe_signed_webhook
+
+    if not whsec.startswith("whsec_"):
+        return "fail", "STRIPE_WEBHOOK_SECRET on Railway is not a valid whsec_ signing secret"
+    probe = probe_signed_webhook(None, url=url, whsec=whsec)
+    if probe is None:
+        return "warn", "Could not run the signed webhook test"
+    kind = probe.classification
+    if kind == "ok":
+        return "pass", f"App accepted a signed test event at {probe.url} (HTTP {probe.httpStatus})"
+    if kind == "signature_mismatch":
+        return "fail", f"App rejected the signing secret held on Railway at {probe.url} (HTTP {probe.httpStatus})"
+    if kind == "route_missing":
+        return "fail", f"No webhook route at {probe.url} (HTTP 404)"
+    if kind == "handler_error":
+        return "fail", f"Webhook handler crashed at {probe.url} (HTTP 500)"
+    if kind == "unreachable":
+        return "warn", f"Could not reach {probe.url}"
+    return "warn", f"Webhook test at {probe.url} was inconclusive ({kind}, HTTP {probe.httpStatus})"
 
 
 def _webhook_check(secret_key: str, webhook_url: str) -> tuple[str, str]:
@@ -271,6 +318,9 @@ def verify_project(project: Project) -> dict[str, Any]:
         if secret_key and base_url and webhook_path:
             status_value, message = _webhook_check(secret_key, _join(base_url, webhook_path))
             checks.append(_check("stripe_webhook", "Stripe webhook", status_value, message))
+            if status_value == "pass" and has_whsec:
+                sig_status, sig_message = _signed_webhook_check(_join(base_url, webhook_path), value("STRIPE_WEBHOOK_SECRET"))
+                checks.append(_check("webhook_signature", "Webhook signature test", sig_status, sig_message))
         tiers = _repo_stripe_tiers(project)
         if secret_key and tiers:
             missing = _missing_tier_products(secret_key, tiers)
@@ -451,7 +501,9 @@ def _auto_repair(project: Project, outcome: dict[str, Any]) -> list[dict[str, An
         except Exception as exc:  # a failed repair is reported, never raised
             repairs.append({"repair": name, "ok": False, "detail": str(exc)[:300]})
 
-    if _failed(outcome, "stripe_webhook") and get_secret(project, "STRIPE_SECRET_KEY"):
+    signature = _failed(outcome, "webhook_signature")
+    secret_rejected = bool(signature and "rejected the signing secret" in signature["message"])
+    if (_failed(outcome, "stripe_webhook") or secret_rejected) and get_secret(project, "STRIPE_SECRET_KEY"):
         attempt("register_stripe_webhook", lambda: register_webhook(project))
 
     if _failed(outcome, "stripe_catalog"):
