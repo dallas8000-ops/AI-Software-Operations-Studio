@@ -108,7 +108,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
     {
         "id": "automation-center",
         "name": "Deployment & Stripe Automation Center",
-        "productionUrl": HUB_API_URL,
+        "productionUrl": "https://stripe-installer.gilliomfrontlinedigital.com",
         "webProductionUrl": HUB_WEB_URL,
         "webhookPath": HUB_WEBHOOK_PATH,
         "healthPath": "/health/",
