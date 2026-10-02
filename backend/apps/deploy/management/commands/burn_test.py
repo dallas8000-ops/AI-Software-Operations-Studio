@@ -174,7 +174,8 @@ class Command(BaseCommand):
             project.scan_data = {"deployPlatform": "railway"}
             project.save(update_fields=["local_path", "scan_data", "updated_at"])
             clear_project_vault(project)
-            result = run_deploy_preflight(project, push_railway_env=True, provision_stripe=False)
+            with patch("apps.vault.railway_cli.railway_cli_token", return_value=None):
+                result = run_deploy_preflight(project, push_railway_env=True, provision_stripe=False)
             assert not result["ok"]
             assert any("RAILWAY_API_TOKEN" in i for i in result["issues"])
 

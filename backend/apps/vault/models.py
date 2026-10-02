@@ -187,6 +187,10 @@ def get_secret(project: Project, key_name: str) -> str | None:
             key_name,
             project.slug,
         )
+    if key_name == "RAILWAY_API_TOKEN":
+        from .railway_cli import railway_cli_token
+
+        return railway_cli_token()
     return None
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any
 from urllib.parse import urlparse
@@ -132,6 +133,46 @@ def resolve_railway_targets_by_domain(project: Project, token: str) -> tuple[str
     return resolve_railway_service_by_host(token, target_host)
 
 
+def _own_project_with_domains(token: str) -> list[dict[str, Any]]:
+    """Project-scoped tokens cannot list every project; read the one the Studio runs in."""
+    project_id = (os.environ.get("RAILWAY_PROJECT_ID") or "").strip()
+    if not project_id:
+        return []
+    try:
+        data = _railway_gql(
+            token,
+            """
+            query($id: String!) {
+              project(id: $id) {
+                id
+                name
+                services { edges { node { id name serviceInstances { edges { node {
+                  domains { serviceDomains { domain } customDomains { domain } }
+                } } } } } }
+              }
+            }
+            """,
+            {"id": project_id},
+        )
+    except RuntimeError:
+        return []
+    proj = data.get("project") or {}
+    services: list[dict[str, Any]] = []
+    for svc_edge in (proj.get("services") or {}).get("edges", []):
+        svc = svc_edge.get("node") or {}
+        domains: list[str] = []
+        for inst_edge in (svc.get("serviceInstances") or {}).get("edges", []):
+            block = (inst_edge.get("node") or {}).get("domains") or {}
+            for key in ("serviceDomains", "customDomains"):
+                for dom in block.get(key) or []:
+                    value = str((dom or {}).get("domain") or "").strip().lower()
+                    if value:
+                        domains.append(value)
+        if svc.get("id"):
+            services.append({"id": str(svc["id"]), "name": str(svc.get("name") or ""), "domains": domains})
+    return [{"id": project_id, "name": str(proj.get("name") or ""), "services": services}]
+
+
 def resolve_railway_service_by_host(token: str, target_host: str) -> tuple[str | None, str | None]:
     """Match a Railway public hostname to project + service IDs."""
     target_host = (target_host or "").strip().lower()
@@ -140,7 +181,7 @@ def resolve_railway_service_by_host(token: str, target_host: str) -> tuple[str |
     try:
         projects = _list_railway_projects_with_domains(token)
     except RuntimeError:
-        return None, None
+        projects = _own_project_with_domains(token)
     for proj in projects:
         for svc in proj.get("services") or []:
             if "postgres" in (svc.get("name") or "").lower():
@@ -387,13 +428,33 @@ def sync_production_url_from_railway(
             domains = svc.get("domains") or []
             if not domains:
                 return None
-            url = f"https://{domains[0].lstrip('https://').lstrip('http://')}"
+            url = f"https://{_bare_host(domains[0])}"
             update_project_scan_data(
                 project,
                 {"productionUrl": url, "production_url": url},
             )
             return url
     return None
+
+
+def _bare_host(value: str) -> str:
+    host = str(value or "").strip()
+    for prefix in ("https://", "http://"):
+        if host.startswith(prefix):
+            host = host[len(prefix):]
+    return host.rstrip("/")
+
+
+def _preferred_host(project: Project, hosts) -> str:
+    """Pick the canonical host: the catalog URL if served, else the shortest Railway domain."""
+    from apps.stripe_core.portfolio_catalog import catalog_by_slug
+
+    entry = catalog_by_slug((getattr(project, "slug", "") or "").strip().lower()) or {}
+    canonical = _bare_host(entry.get("productionUrl") or "")
+    bare = {_bare_host(h): h for h in hosts}
+    if canonical in bare:
+        return bare[canonical]
+    return sorted(hosts, key=lambda h: (len(h), h))[0]
 
 
 def ensure_railway_public_domain(
@@ -406,28 +467,34 @@ def ensure_railway_public_domain(
     """Return the service URL, creating a Railway-provided domain when missing."""
     hosts = _service_public_hosts(token, project_id, service_id)
     if hosts:
-        hostname = sorted(hosts)[0]
+        hostname = _preferred_host(project, hosts)
     else:
         resolved_environment_id = environment_id or _railway_environment_id(token, project_id)
-        data = _railway_gql(
-            token,
-            """
-            mutation($input: ServiceDomainCreateInput!) {
-              serviceDomainCreate(input: $input) { domain }
-            }
-            """,
-            {
-                "input": {
-                    "serviceId": service_id,
-                    "environmentId": resolved_environment_id,
+        try:
+            data = _railway_gql(
+                token,
+                """
+                mutation($input: ServiceDomainCreateInput!) {
+                  serviceDomainCreate(input: $input) { domain }
                 }
-            },
-        )
+                """,
+                {
+                    "input": {
+                        "serviceId": service_id,
+                        "environmentId": resolved_environment_id,
+                    }
+                },
+            )
+        except RuntimeError as exc:
+            known = str((project.scan_data or {}).get("productionUrl") or "").strip()
+            if "limit for service domains" in str(exc).lower() and known:
+                return known
+            raise
         hostname = str((data.get("serviceDomainCreate") or {}).get("domain") or "").strip()
         if not hostname:
             raise RuntimeError("Railway did not return a public domain for the web service")
 
-    url = f"https://{hostname.lstrip('https://').lstrip('http://')}"
+    url = f"https://{_bare_host(hostname)}"
     update_project_scan_data(project, {"productionUrl": url, "production_url": url})
     return url
 

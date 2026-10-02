@@ -13,26 +13,26 @@ from apps.stripe_core.portfolio_workspace import (
 
 class PortfolioWorkspaceTests(SimpleTestCase):
     def test_detects_nested_hub_path(self):
-        path = r"C:\Software Projects\Deployment-Stripe-center\backend\clones\silverfox"
+        path = r"C:\Software Projects\Deployment-Stripe-center\backend\clones\kistie-store"
         self.assertTrue(is_automation_center_nested_path(path))
         self.assertTrue(is_inside_hub_repo(path))
 
-    def test_should_repair_silverfox_inside_hub(self):
+    def test_should_repair_kistie_inside_hub(self):
         class P:
-            slug = "silverfox"
-            local_path = r"C:\Software Projects\Deployment-Stripe-center\backend\clones\silverfox"
+            slug = "kistie-store"
+            local_path = r"C:\Software Projects\Deployment-Stripe-center\backend\clones\kistie-store"
             git_url = ""
 
         self.assertTrue(should_repair_local_path(P()))
 
     def test_resolve_workspace_prefers_catalog_over_hub(self):
         class P:
-            slug = "silverfox"
-            local_path = r"C:\Software Projects\Deployment-Stripe-center\backend\clones\silverfox"
+            slug = "kistie-store"
+            local_path = r"C:\Software Projects\Deployment-Stripe-center\backend\clones\kistie-store"
             git_url = ""
 
         target = resolve_workspace_path(P())
-        self.assertEqual(target, r"C:\Software Projects\SilverFox")
+        self.assertEqual(target, r"C:\Software Projects\Kristie-Store")
 
     def test_workspace_path_error_rejects_hub_nested(self):
         class P:

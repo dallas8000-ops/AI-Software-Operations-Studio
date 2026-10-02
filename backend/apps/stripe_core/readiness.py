@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 from apps.projects.models import Project
 from apps.stripe_core.provision import load_manifest
-from apps.stripe_core.portfolio_catalog import is_stripe_exempt_slug
+from apps.stripe_core.portfolio_catalog import DATABASE_OPTIONAL_SLUGS, is_stripe_exempt_slug
 from apps.stripe_core.verify import verify_stripe_keys
 from apps.vault.models import get_secret
 
@@ -163,12 +163,26 @@ def _stripe_manifest_check(project_root: Path) -> ReadinessCheck:
 
 def _database_checks(project: Project, project_root: Path) -> list[ReadinessCheck]:
     db_url = get_secret(project, "DATABASE_URL")
-    db_valid = bool(db_url and db_url.startswith(_DB_PREFIXES))
+    db_valid = bool(db_url and (db_url.startswith(_DB_PREFIXES) or db_url.startswith("${{")))
+    if (project.slug or "").strip().lower() in DATABASE_OPTIONAL_SLUGS:
+        return [
+            ReadinessCheck(
+                id="db-url", category="database", name="DATABASE_URL configured",
+                status="pass", message="Not required (app uses no Railway Postgres)",
+            ),
+        ]
+    remote_db = bool(((project.scan_data or {}).get("railway") or {}).get("remoteHasDatabaseUrl"))
+    if db_valid:
+        db_message = f"Database URL set ({db_url.split('://')[0]})"
+    elif remote_db:
+        db_message = "DATABASE_URL set on Railway service"
+    else:
+        db_message = "DATABASE_URL missing or invalid"
     return [
         ReadinessCheck(
             id="db-url", category="database", name="DATABASE_URL configured",
-            status="pass" if db_valid else "warn",
-            message=f"Database URL set ({db_url.split('://')[0]})" if db_valid else "DATABASE_URL missing or invalid",
+            status="pass" if (db_valid or remote_db) else "warn",
+            message=db_message,
             fix="Store DATABASE_URL in vault (postgresql://... or sqlite://...)",
         ),
         ReadinessCheck(
@@ -225,13 +239,23 @@ def _security_checks(project_root: Path, scan: dict) -> list[ReadinessCheck]:
     ]
 
 
+def _live_health_ok(project: Project, scan: dict) -> bool:
+    base = str(scan.get("productionUrl") or scan.get("production_url") or "").rstrip("/")
+    if not base.startswith("https://"):
+        return False
+    for path in ("/health/", "/health", "/api/health", "/api/health/"):
+        if _head_reachable(base + path)[0]:
+            return True
+    return False
+
+
 def _deploy_checks(project: Project, project_root: Path, scan: dict) -> list[ReadinessCheck]:
     from apps.stripe_core.codegen.paths import resolve_stripe_module_path
 
     has_health = any(
         _file_exists(project_root / p)
         for p in ("app/api/health/route.ts", "pages/api/health.ts")
-    ) or _file_exists(resolve_stripe_module_path(project, project_root))
+    ) or _file_exists(resolve_stripe_module_path(project, project_root)) or _live_health_ok(project, scan)
     has_backup = (
         _file_exists(project_root / "scripts" / "backup-db.sh")
         or _file_exists(project_root / "scripts" / "backup-db.ps1")
@@ -239,7 +263,14 @@ def _deploy_checks(project: Project, project_root: Path, scan: dict) -> list[Rea
     platform = scan.get("deployPlatform") or ("django" if project.framework == "django" else "unknown")
     has_build = (
         scan.get("has_package_json", False)
-        or _file_exists(project_root / "package.json")
+        or any(
+            _file_exists(project_root / name)
+            for name in (
+                "package.json", "requirements.txt", "pyproject.toml", "Dockerfile",
+                "Procfile", "railway.json", "railway.toml", "nixpacks.toml",
+                "backend/requirements.txt", "backend/Dockerfile", "frontend/package.json",
+            )
+        )
         or project.framework == "django"
     )
 
