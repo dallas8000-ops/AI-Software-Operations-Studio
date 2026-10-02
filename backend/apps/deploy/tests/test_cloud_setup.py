@@ -164,3 +164,28 @@ class AutoRepairTests(TestCase):
         register.assert_called_once()
         self.assertEqual(repairs[0]["repair"], "register_stripe_webhook")
         self.assertTrue(repairs[0]["ok"])
+
+class StripeCatalogTests(TestCase):
+    def test_missing_products_detected_by_name(self):
+        from apps.deploy import cloud_setup
+
+        class P:
+            def __init__(self, name):
+                self.name = name
+
+        class Listing:
+            def auto_paging_iter(self):
+                return iter([P("Starter")])
+
+        with patch("stripe.Product.list", return_value=Listing()):
+            missing = cloud_setup._missing_tier_products("sk", [{"name": "Starter"}, {"name": "Pro"}])
+        self.assertEqual(missing, ["Pro"])
+
+    def test_failed_catalog_triggers_provisioning(self):
+        from apps.deploy import cloud_setup
+
+        outcome = {"checks": [{"id": "stripe_catalog", "status": "fail"}], "railway": {}}
+        with patch.object(cloud_setup, "provision_missing_catalog", return_value={"created": ["Pro"]}) as run:
+            repairs = cloud_setup._auto_repair(None, outcome)
+        run.assert_called_once()
+        self.assertEqual(repairs[0]["repair"], "provision_stripe_catalog")

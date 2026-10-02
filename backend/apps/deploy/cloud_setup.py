@@ -247,6 +247,25 @@ def verify_project(project: Project) -> dict[str, Any]:
         if secret_key and base_url and webhook_path:
             status_value, message = _webhook_check(secret_key, _join(base_url, webhook_path))
             checks.append(_check("stripe_webhook", "Stripe webhook", status_value, message))
+        tiers = _repo_stripe_tiers(project)
+        if secret_key and tiers:
+            missing = _missing_tier_products(secret_key, tiers)
+            if missing is None:
+                checks.append(_check("stripe_catalog", "Stripe products", "warn", "Could not list Stripe products"))
+            elif missing:
+                checks.append(
+                    _check(
+                        "stripe_catalog",
+                        "Stripe products",
+                        "fail",
+                        "Stripe has no active product for: " + ", ".join(missing),
+                        "Run setup to create them from the app's stripe.config.json",
+                    )
+                )
+            else:
+                checks.append(
+                    _check("stripe_catalog", "Stripe products", "pass", f"All {len(tiers)} tier product(s) exist in Stripe")
+                )
 
     db_url = value("DATABASE_URL")
     if not db_url:
@@ -262,6 +281,74 @@ def verify_project(project: Project) -> dict[str, Any]:
         checks.append(_check("health", "Live health check", "pass" if ok else "fail", message))
 
     return {"checks": checks, "imported": imported, "railway": railway}
+
+
+def _repo_stripe_config(project: Project) -> dict[str, Any] | None:
+    """The app's own stripe.config.json from its GitHub repo; None when it has none (nothing is invented)."""
+    import json
+
+    from apps.api_transfer.github_import import fetch_repo_text_file
+    from apps.stripe_core.stripe_config import normalize_stripe_config
+
+    if not project.git_url:
+        return None
+    try:
+        text = fetch_repo_text_file(project.git_url, "stripe.config.json")
+        if not text:
+            return None
+        raw = json.loads(text)
+        return normalize_stripe_config(raw) if isinstance(raw, dict) and raw.get("tiers") else None
+    except Exception:
+        return None
+
+
+def _repo_stripe_tiers(project: Project) -> list[dict[str, Any]]:
+    config = _repo_stripe_config(project)
+    return list(config["tiers"]) if config else []
+
+
+def _missing_tier_products(secret_key: str, tiers: list[dict[str, Any]]) -> list[str] | None:
+    import stripe
+
+    try:
+        names = {p.name for p in stripe.Product.list(limit=100, active=True, api_key=secret_key).auto_paging_iter()}
+    except stripe.StripeError:
+        return None
+    return [t["name"] for t in tiers if t["name"] not in names]
+
+
+def provision_missing_catalog(project: Project) -> dict[str, Any]:
+    """Create only the tier products/prices Stripe lacks, from the app's stripe.config.json."""
+    import tempfile
+    from pathlib import Path
+
+    from apps.stripe_core.provision import ProvisionConfig, provision_catalog
+
+    config = _repo_stripe_config(project)
+    secret_key = (get_secret(project, "STRIPE_SECRET_KEY") or "").strip()
+    if not config or not secret_key:
+        raise ValueError("No stripe.config.json in the app's repo, or no STRIPE_SECRET_KEY in the vault")
+    missing = _missing_tier_products(secret_key, config["tiers"]) or []
+    tiers = [t for t in config["tiers"] if t["name"] in missing]
+    if not tiers:
+        return {"created": []}
+    entry = catalog_entry_for(project) or {}
+    base_url = str(entry.get("productionUrl") or config.get("appUrl") or "").rstrip("/")
+    provision = config.get("provision") or {}
+    with tempfile.TemporaryDirectory() as scratch:
+        result = provision_catalog(
+            secret_key,
+            Path(scratch),
+            project=project,
+            config=ProvisionConfig(
+                tiers=tiers,
+                app_url=base_url,
+                billing_portal_return_url=config.get("billingPortalReturnUrl") or f"{base_url}/stripe/account/",
+                create_webhook=False,
+                create_portal=bool(provision.get("createPortal", True)),
+            ),
+        )
+    return {"created": [p["tier"] for p in result.prices if not p.get("reused")], "warnings": result.warnings}
 
 
 def register_webhook(project: Project) -> dict[str, Any]:
@@ -334,6 +421,9 @@ def _auto_repair(project: Project, outcome: dict[str, Any]) -> list[dict[str, An
 
     if _failed(outcome, "stripe_webhook") and get_secret(project, "STRIPE_SECRET_KEY"):
         attempt("register_stripe_webhook", lambda: register_webhook(project))
+
+    if _failed(outcome, "stripe_catalog"):
+        attempt("provision_stripe_catalog", lambda: provision_missing_catalog(project))
 
     if (_failed(outcome, "stripe_keys") or _failed(outcome, "webhook_secret")) and not repairs_has(repairs, "register_stripe_webhook"):
         attempt("sync_vault_to_railway", lambda: auto_push_railway_env(project).get("message", "pushed"))
