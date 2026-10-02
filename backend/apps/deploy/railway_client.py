@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -28,8 +31,15 @@ def _post(token: str, body: dict, *, header_style: str) -> tuple[int, dict | str
         headers=headers,
         method="POST",
     )
+    started = time.time()
+    op = str(body.get("query", "")).strip().split("(")[0].split("{")[0][:40]
+    verbose = bool(os.environ.get("RAILWAY_VERBOSE"))
+    if verbose:
+        print(f"    [railway] {op} ...", end="", flush=True, file=sys.stderr)
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if verbose:
+                print(f" {resp.status} {time.time() - started:.1f}s", file=sys.stderr, flush=True)
             return resp.status, json.loads(resp.read().decode())
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode()[:500]
@@ -37,6 +47,10 @@ def _post(token: str, body: dict, *, header_style: str) -> tuple[int, dict | str
             return exc.code, json.loads(raw)
         except json.JSONDecodeError:
             return exc.code, raw
+    except (TimeoutError, urllib.error.URLError, ConnectionError) as exc:
+        if verbose:
+            print(f" FAILED {time.time() - started:.1f}s", file=sys.stderr, flush=True)
+        return 599, f"network error: {exc}"
 
 
 def railway_gql(token: str, query: str, variables: dict | None = None) -> dict:
