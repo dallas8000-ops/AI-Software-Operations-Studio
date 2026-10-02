@@ -137,16 +137,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "stripeExempt": True,
         "notes": "Portfolio exempt — no Stripe subscription billing",
     },
-    {
-        "id": "agripay-logistics",
-        "name": "AgriPay Logistics AI",
-        "productionUrl": "https://agripay-api-production.up.railway.app",
-        "demoUrl": "https://agripay-api-production.up.railway.app/demo",
-        "webhookPath": "/webhooks/stripe/",
-        "healthPath": "/health/",
-        "projectSlug": "agripay-logistics-ai",
-        "notes": "Django API + React — mobile money + Stripe subscription billing",
-    },
+
     {
         "id": "righand",
         "name": "RIGHAND",
@@ -189,15 +180,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "healthPath": "/health/",
         "projectSlug": "enpowercommand",
     },
-    {
-        "id": "ai-memory-engine",
-        "name": "AI Memory Engine",
-        "productionUrl": "https://ai-memory-engine-production.up.railway.app",
-        "healthPath": "/health/",
-        "projectSlug": "ai-memory-engine",
-        "stripeExempt": True,
-        "notes": "Semantic-memory API — no Stripe billing",
-    },
+
     {
         "id": "digital-sales-automation-center",
         "name": "Digital Sales Automation Center",
@@ -206,6 +189,15 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "projectSlug": "digital-sales-automation-center",
         "stripeExempt": True,
         "notes": "Portfolio app — no Stripe billing",
+    },
+    {
+        "id": "frontlinedigital",
+        "name": "FrontLineDigital",
+        "productionUrl": "https://gilliomfrontlinedigital.com",
+        "healthPath": "/",
+        "projectSlug": "frontlinedigital",
+        "stripeExempt": True,
+        "notes": "Marketing site, Railway service FrontLineDigital-1",
     },
     {
         "id": "elite-fintech-web-legacy",        "name": "Elite Fintech Web (retired duplicate)",
