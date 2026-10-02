@@ -3,15 +3,14 @@
 Used on the hosted Studio (Railway container), where ``C:\\...`` app folders do not exist.
 Read-only against Railway and Stripe: copies existing Railway variables into the vault
 (never overwriting vault values), checks health and webhook registration, and records a
-completed PipelineRun with readiness checks. Never pushes env, rotates webhook secrets,
-creates domains, or writes files.
+completed PipelineRun with readiness checks. Verification never pushes env, rotates webhook secrets,
+creates domains, or writes files; ``register_webhook`` is the one explicit, confirmed repair.
 """
 
 from __future__ import annotations
 
-import re
-
 import os
+import re
 import urllib.error
 import urllib.request
 from typing import Any
@@ -264,6 +263,43 @@ def verify_project(project: Project) -> dict[str, Any]:
         checks.append(_check("health", "Live health check", "pass" if ok else "fail", message))
 
     return {"checks": checks, "imported": imported, "railway": railway}
+
+
+def register_webhook(project: Project) -> dict[str, Any]:
+    """Register the catalog webhook in Stripe and push the signing secret to the Railway service."""
+    import stripe
+
+    from apps.stripe_core.provision import DEFAULT_WEBHOOK_EVENTS, _register_webhook
+
+    from .env_push import auto_push_railway_env
+
+    entry = catalog_entry_for(project)
+    if not entry:
+        raise ValueError(f"{project.name} is not in the portfolio catalog")
+    base_url = str(entry.get("productionUrl") or "").rstrip("/")
+    webhook_path = str(entry.get("webhookPath") or "").strip()
+    if not (base_url and webhook_path):
+        raise ValueError("Catalog entry has no productionUrl/webhookPath")
+    secret_key = (get_secret(project, "STRIPE_SECRET_KEY") or "").strip()
+    if not secret_key:
+        raise ValueError("STRIPE_SECRET_KEY is not in the project vault")
+
+    webhook_url = _join(base_url, webhook_path)
+    stripe.api_key = secret_key
+    try:
+        webhook = _register_webhook(webhook_url, list(DEFAULT_WEBHOOK_EVENTS))
+    finally:
+        stripe.api_key = None
+    result: dict[str, Any] = {"webhookUrl": webhook_url, "endpointId": webhook["id"], "reused": webhook["reused"]}
+    secret = webhook.get("secret")
+    if not secret:
+        result["warning"] = "Stripe returned no signing secret; Railway was not updated."
+        return result
+    set_secret(project, "STRIPE_WEBHOOK_SECRET", secret)
+    push = auto_push_railway_env(project, variables={"STRIPE_WEBHOOK_SECRET": secret})
+    result["pushed"] = push.get("pushed", [])
+    result["message"] = push.get("message", "")
+    return result
 
 
 def run_cloud_setup(project: Project, *, user=None) -> PipelineRun:

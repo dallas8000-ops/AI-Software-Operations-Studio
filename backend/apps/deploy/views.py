@@ -454,6 +454,34 @@ class SyncApprovalView(ProjectOwnedMixin, APIView):
         )
 
 
+class WebhookRegisterView(ProjectOwnedMixin, APIView):
+    """Register the app's Stripe webhook and deliver the signing secret to its Railway service."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    @staticmethod
+    def _confirmation(project) -> str:
+        return f"REGISTER WEBHOOK FOR {project.slug}"
+
+    def get(self, request, project_slug: str):
+        project = self.get_project(project_slug, min_role="admin")
+        return Response({"requiresConfirmation": self._confirmation(project)})
+
+    def post(self, request, project_slug: str):
+        from .cloud_setup import register_webhook
+
+        project = self.get_project(project_slug, min_role="admin")
+        if str(request.data.get("confirmation") or "").strip() != self._confirmation(project):
+            return Response(
+                {"error": "Exact confirmation is required.", "requiresConfirmation": self._confirmation(project)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            return Response(register_webhook(project))
+        except (RuntimeError, ValueError) as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class InfraPreviewView(ProjectOwnedMixin, APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
