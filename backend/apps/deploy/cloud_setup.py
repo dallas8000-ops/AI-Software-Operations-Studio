@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -189,8 +190,15 @@ def verify_project(project: Project) -> dict[str, Any]:
             from .env_push import _railway_environment_id, get_railway_env_vars
 
             try:
-                environment_id = _railway_environment_id(token, project_id)
-                variables = get_railway_env_vars(token, project_id, service_id, environment_id)
+                for attempt_no in range(3):  # Railway intermittently answers "Not Authorized" under load
+                    try:
+                        environment_id = _railway_environment_id(token, project_id)
+                        variables = get_railway_env_vars(token, project_id, service_id, environment_id)
+                        break
+                    except Exception:
+                        if attempt_no == 2:
+                            raise
+                        time.sleep(1.5 * (attempt_no + 1))
             except Exception as exc:  # one app's Railway error must not fail the whole run
                 checks.append(
                     _check(
