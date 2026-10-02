@@ -965,9 +965,12 @@ input::placeholder {
 
 .score-ring-center {
   position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   line-height: 1.1;
   font-size: 11px;
   color: var(--muted);
