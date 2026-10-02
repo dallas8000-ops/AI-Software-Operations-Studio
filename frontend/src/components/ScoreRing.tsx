@@ -47,7 +47,7 @@ export default function ScoreRing({ score, size = 88, label, sublabel }: ScoreRi
         {score == null ? (
           <span className="score-ring-empty-hint">Run setup</span>
         ) : (
-          <strong style={{ color }}>{display}</strong>
+          <strong style={{ color, fontSize: Math.max(11, Math.round(size * (String(display).length > 2 ? 0.27 : 0.32))) }}>{display}</strong>
         )}
         {label && <span>{label}</span>}
         {sublabel && <small>{sublabel}</small>}
