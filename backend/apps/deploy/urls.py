@@ -15,6 +15,7 @@ from .views import (
     PostgresStatusView,
     PostgresTestView,
     SyncApprovalView,
+    WebhookRegisterView,
 )
 
 urlpatterns = [
@@ -77,6 +78,11 @@ urlpatterns = [
         "projects/<slug:project_slug>/deploy/sync-approval/",
         SyncApprovalView.as_view(),
         name="deploy-sync-approval",
+    ),
+    path(
+        "projects/<slug:project_slug>/deploy/webhook-register/",
+        WebhookRegisterView.as_view(),
+        name="deploy-webhook-register",
     ),
     path(
         "projects/<slug:project_slug>/deploy/infra/preview/",
