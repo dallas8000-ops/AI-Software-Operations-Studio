@@ -163,7 +163,7 @@ def _stripe_manifest_check(project_root: Path) -> ReadinessCheck:
 
 def _database_checks(project: Project, project_root: Path) -> list[ReadinessCheck]:
     db_url = get_secret(project, "DATABASE_URL")
-    db_valid = bool(db_url and db_url.startswith(_DB_PREFIXES))
+    db_valid = bool(db_url and (db_url.startswith(_DB_PREFIXES) or db_url.startswith("${{")))
     if (project.slug or "").strip().lower() in DATABASE_OPTIONAL_SLUGS:
         return [
             ReadinessCheck(
@@ -194,9 +194,13 @@ def _database_checks(project: Project, project_root: Path) -> list[ReadinessChec
     ]
 
 
-def _ssl_checks(prod_url: str | None) -> list[ReadinessCheck]:
+def _ssl_checks(prod_url: str | None, fallback_url: str | None = None) -> list[ReadinessCheck]:
     if prod_url and str(prod_url).startswith("https://"):
         ok, msg = _head_reachable(str(prod_url))
+        if not ok and fallback_url and fallback_url != prod_url:
+            fb_ok, fb_msg = _head_reachable(str(fallback_url))
+            if fb_ok:
+                ok, msg = True, f"{fb_msg} via Railway domain ({prod_url} custom domain pending DNS/cert)"
         return [
             ReadinessCheck(
                 id="ssl-https", category="ssl", name="HTTPS production URL",
@@ -331,7 +335,9 @@ def run_readiness_checks(
         message=str(prod_url) if prod_url else "No production URL configured",
         fix="Set productionUrl in project scan data or pass app_url",
     ))
-    checks.extend(_ssl_checks(prod_url))
+    checks.extend(
+        _ssl_checks(prod_url, str(scan.get("productionUrl") or scan.get("production_url") or "") or None)
+    )
     checks.extend(_security_checks(project_root, scan))
     checks.extend(_deploy_checks(project, project_root, scan))
     return checks

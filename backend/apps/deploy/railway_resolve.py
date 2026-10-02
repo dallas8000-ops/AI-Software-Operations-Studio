@@ -387,13 +387,33 @@ def sync_production_url_from_railway(
             domains = svc.get("domains") or []
             if not domains:
                 return None
-            url = f"https://{domains[0].lstrip('https://').lstrip('http://')}"
+            url = f"https://{_bare_host(domains[0])}"
             update_project_scan_data(
                 project,
                 {"productionUrl": url, "production_url": url},
             )
             return url
     return None
+
+
+def _bare_host(value: str) -> str:
+    host = str(value or "").strip()
+    for prefix in ("https://", "http://"):
+        if host.startswith(prefix):
+            host = host[len(prefix):]
+    return host.rstrip("/")
+
+
+def _preferred_host(project: Project, hosts) -> str:
+    """Pick the canonical host: the catalog URL if served, else the shortest Railway domain."""
+    from apps.stripe_core.portfolio_catalog import catalog_by_slug
+
+    entry = catalog_by_slug((getattr(project, "slug", "") or "").strip().lower()) or {}
+    canonical = _bare_host(entry.get("productionUrl") or "")
+    bare = {_bare_host(h): h for h in hosts}
+    if canonical in bare:
+        return bare[canonical]
+    return sorted(hosts, key=lambda h: (len(h), h))[0]
 
 
 def ensure_railway_public_domain(
@@ -406,7 +426,7 @@ def ensure_railway_public_domain(
     """Return the service URL, creating a Railway-provided domain when missing."""
     hosts = _service_public_hosts(token, project_id, service_id)
     if hosts:
-        hostname = sorted(hosts)[0]
+        hostname = _preferred_host(project, hosts)
     else:
         resolved_environment_id = environment_id or _railway_environment_id(token, project_id)
         try:
@@ -433,7 +453,7 @@ def ensure_railway_public_domain(
         if not hostname:
             raise RuntimeError("Railway did not return a public domain for the web service")
 
-    url = f"https://{hostname.lstrip('https://').lstrip('http://')}"
+    url = f"https://{_bare_host(hostname)}"
     update_project_scan_data(project, {"productionUrl": url, "production_url": url})
     return url
 
