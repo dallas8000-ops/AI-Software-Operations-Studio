@@ -294,7 +294,10 @@ def push_to_railway(
 
     changed = True
     if preserve_existing:
-        changed = any(existing.get(k) != v for k, v in upsert_vars.items())
+        # Send only the keys that differ: re-sending untouched variables rewrites them and
+        # flattens Railway ${{...}} references into literal values.
+        upsert_vars = {k: v for k, v in upsert_vars.items() if existing.get(k) != v}
+        changed = bool(upsert_vars)
     if changed:
         _railway_gql(
             token,
