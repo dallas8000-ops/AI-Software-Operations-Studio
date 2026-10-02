@@ -89,8 +89,8 @@ STRIPE_EXEMPT_SLUGS: frozenset[str] = frozenset(
     }
 )
 
-# Portfolio demos — not Stripe billing workspaces; hide from Projects dashboard.
-DASHBOARD_HIDDEN_PROJECT_SLUGS: frozenset[str] = MERGED_LEGACY_PROJECT_SLUGS | STRIPE_EXEMPT_SLUGS
+# Only merged legacy slugs are hidden; Stripe-exempt apps (e.g. Kistie Store) stay visible.
+DASHBOARD_HIDDEN_PROJECT_SLUGS: frozenset[str] = MERGED_LEGACY_PROJECT_SLUGS
 
 # Matches FrontlineDigital portfolioLiveUrls.ts (Railway hostnames for webhooks/audit).
 PORTFOLIO_CATALOG: list[CatalogEntry] = [
@@ -128,6 +128,16 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
                 "elite-fintech-systems-api, -web, -db. Same monorepo, not a separate project."
             ),
         },
+    {
+        "id": "agripay-logistics",
+        "name": "AgriPay Logistics AI",
+        "productionUrl": "https://agripay-api-production.up.railway.app",
+        "demoUrl": "https://agripay-api-production.up.railway.app/demo",
+        "webhookPath": "/webhooks/stripe/",
+        "healthPath": "/health/",
+        "projectSlug": "agripay-logistics-ai",
+        "notes": "Django API + React — mobile money + Stripe subscription billing",
+    },
     {
         "id": "kistie-store",
         "name": "Kistie Store",
