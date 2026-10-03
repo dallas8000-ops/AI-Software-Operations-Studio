@@ -130,12 +130,18 @@ def _health_check(url: str) -> tuple[bool, str]:
         with urllib.request.urlopen(request, timeout=HEALTH_TIMEOUT_SECONDS) as response:
             code = response.status
             body = response.read(4000).decode("utf-8", errors="replace")
+            content_type = response.headers.get("Content-Type", "")
     except urllib.error.HTTPError as exc:
         code = exc.code
+        body = ""
+        content_type = ""
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return False, f"{url} unreachable ({exc})"
     if not 200 <= code < 400:
         return False, f"{url} returned HTTP {code}"
+    path = urlparse(url).path
+    if path not in ("", "/") and ("text/html" in content_type.lower() or body.lstrip("\ufeff \r\n\t").lower().startswith(("<!doctype", "<html"))):
+        return False, f"{url} returned a web page, not a health response (no API health endpoint is serving this path)"
     reported = _reported_unhealthy(body)
     if reported:
         return False, f"{url} returned HTTP {code} but reports: {reported}"
@@ -150,11 +156,16 @@ def _reported_unhealthy(body: str) -> str:
         return ""
     if not isinstance(data, dict):
         return ""
+    if data.get("ok") is False:
+        return "ok=false"
+    for db_key in ("db", "database"):
+        if data.get(db_key) is False:
+            return f"{db_key}=false"
     status = str(data.get("status", "")).strip().lower()
     if status in {"error", "unhealthy", "down", "fail", "failed", "degraded"}:
         return f"status={status}"
     for key, val in data.items():
-        if key != "status" and isinstance(val, str) and val.strip().lower() in {"error", "down", "unhealthy", "fail", "failed"}:
+        if key != "status" and isinstance(val, str) and val.strip().lower() in {"error", "down", "unhealthy", "fail", "failed", "unreachable", "disconnected"}:
             return f"{key}={val.strip().lower()}"
     return ""
 
