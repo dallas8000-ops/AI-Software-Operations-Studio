@@ -30,3 +30,16 @@ class PrefixMirrorTests(SimpleTestCase):
             payload = env_push.build_env_var_payload(project)
         self.assertEqual(payload["SPECWRIGHT_STRIPE_WEBHOOK_SECRET"], "whsec_x")
         self.assertEqual(payload["STRIPE_WEBHOOK_SECRET"], "whsec_x")
+
+
+class GeneratedAdminTests(SimpleTestCase):
+    def test_kistie_gets_stable_generated_admin(self):
+        store = {}
+        project = mock.Mock(slug="kistie-store")
+        with mock.patch.object(env_push, "get_secret", side_effect=lambda p, k: store.get(k)), \
+             mock.patch.object(env_push, "set_secret", side_effect=lambda p, k, v: store.__setitem__(k, v)):
+            first = env_push.build_env_var_payload(project)
+            second = env_push.build_env_var_payload(project)
+        self.assertEqual(first["DJANGO_SUPERUSER_USERNAME"], "admin")
+        self.assertGreaterEqual(len(first["DJANGO_SUPERUSER_PASSWORD"]), 20)
+        self.assertEqual(first["DJANGO_SUPERUSER_PASSWORD"], second["DJANGO_SUPERUSER_PASSWORD"])
