@@ -21,3 +21,12 @@ class PushOnlyChangedTests(SimpleTestCase):
         result, calls = self._push({"A": "1", "B": "2"}, {"A": "1"})
         self.assertFalse(result["changed"])
         self.assertEqual(calls, [])
+
+
+class PrefixMirrorTests(SimpleTestCase):
+    def test_specwright_gets_prefixed_stripe_keys(self):
+        project = mock.Mock(slug="specwright")
+        with mock.patch.object(env_push, "get_secret", side_effect=lambda p, k: {"STRIPE_WEBHOOK_SECRET": "whsec_x"}.get(k)):
+            payload = env_push.build_env_var_payload(project)
+        self.assertEqual(payload["SPECWRIGHT_STRIPE_WEBHOOK_SECRET"], "whsec_x")
+        self.assertEqual(payload["STRIPE_WEBHOOK_SECRET"], "whsec_x")

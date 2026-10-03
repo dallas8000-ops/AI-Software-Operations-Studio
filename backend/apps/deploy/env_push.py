@@ -102,6 +102,9 @@ PRESET_VAULT_KEYS: dict[str, list[str]] = {
     "ai-memory-engine": AI_MEMORY_ENGINE_VAULT_KEYS,
 }
 
+# Apps that read Stripe settings under their own prefix (e.g. Specwright's pydantic env_prefix).
+ENV_PREFIX_MIRRORS: dict[str, str] = {"specwright": "SPECWRIGHT_"}
+
 VAULT_KEY_ALIASES: dict[str, dict[str, str]] = {
     "agripay-logistics-ai": {"DJANGO_SECRET_KEY": "SECRET_KEY"},
 }
@@ -345,7 +348,12 @@ def build_env_var_payload(
     vault_vars = _vault_subset(project, vault_keys or [])
     if preset_vars and vault_vars:
         vault_vars = _apply_vault_overrides(preset_vars, vault_vars)
-    return merge_env_vars(preset=preset_vars or None, vault=vault_vars or None, inline=variables)
+    merged = merge_env_vars(preset=preset_vars or None, vault=vault_vars or None, inline=variables)
+    prefix = ENV_PREFIX_MIRRORS.get((project.slug or "").strip().lower())
+    if prefix:
+        for key in [k for k in merged if k.startswith("STRIPE_")]:
+            merged.setdefault(prefix + key, merged[key])
+    return merged
 
 
 def ensure_ai_memory_engine_api_key(project: Project) -> bool:
