@@ -86,6 +86,7 @@ DATABASE_OPTIONAL_SLUGS: frozenset[str] = frozenset(
 STRIPE_EXEMPT_SLUGS: frozenset[str] = frozenset(
     {
         "kistie-store",
+        "eastbridge-ops",  # takes no payments; Stripe is only its deploy hub
     }
 )
 
