@@ -182,6 +182,21 @@ def _signed_webhook_check(url: str, whsec: str) -> tuple[str, str]:
     return "warn", f"Webhook test at {probe.url} was inconclusive ({kind}, HTTP {probe.httpStatus})"
 
 
+def _stripe_key_check(secret_key: str) -> tuple[str, str]:
+    """Ask Stripe whether the app's secret key is actually valid."""
+    import stripe
+
+    try:
+        stripe.Balance.retrieve(api_key=secret_key)
+    except stripe.AuthenticationError:
+        return "fail", "Stripe rejected the app's STRIPE_SECRET_KEY (invalid, revoked or expired)"
+    except stripe.PermissionError:
+        return "pass", "Stripe accepted the key (restricted key without balance access)"
+    except stripe.StripeError as exc:
+        return "warn", f"Could not verify the Stripe key: {exc.user_message or exc}"
+    return "pass", "Stripe accepted the app's secret key"
+
+
 def _webhook_check(secret_key: str, webhook_url: str) -> tuple[str, str]:
     import stripe
 
@@ -305,6 +320,9 @@ def verify_project(project: Project) -> dict[str, Any]:
                 None if secret_key and has_publishable else "Set STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY on the app's Railway service",
             )
         )
+        if secret_key:
+            key_status, key_message = _stripe_key_check(secret_key)
+            checks.append(_check("stripe_key_valid", "Stripe key accepted by Stripe", key_status, key_message))
         has_whsec = bool(value("STRIPE_WEBHOOK_SECRET"))
         checks.append(
             _check(
