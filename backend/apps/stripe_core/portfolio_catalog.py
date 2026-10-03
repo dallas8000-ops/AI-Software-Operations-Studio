@@ -154,7 +154,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "name": "RIGHAND",
         "productionUrl": "https://righand-production.up.railway.app",
         "webhookPath": "/api/v1/billing/webhook/",
-        "healthPath": "/health/",
+        "healthPath": "/health",
         "projectSlug": "righand",
     },
     {
@@ -188,7 +188,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "name": "EnPowerCommand",
         "productionUrl": "https://enpowercommand-production.up.railway.app",
         "webhookPath": "/api/billing/webhook",
-        "healthPath": "/health/",
+        "healthPath": "/api/health",
         "projectSlug": "enpowercommand",
     },
 
@@ -196,7 +196,7 @@ PORTFOLIO_CATALOG: list[CatalogEntry] = [
         "id": "digital-sales-automation-center",
         "name": "Digital Sales Automation Center",
         "productionUrl": "https://digital-sales-automation-center-production.up.railway.app",
-        "healthPath": "/health/",
+        "healthPath": "/api/health",
         "projectSlug": "digital-sales-automation-center",
         "stripeExempt": True,
         "notes": "Portfolio app — no Stripe billing",

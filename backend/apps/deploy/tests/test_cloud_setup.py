@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
+from apps.deploy import cloud_setup
 from apps.deploy.cloud_setup import catalog_entry_for, needs_cloud_setup, run_cloud_setup
 from apps.projects.models import Project
 from apps.runs.models import PipelineRun
@@ -251,3 +252,30 @@ class StripeKeyCheckTests(TestCase):
 
         with patch("stripe.Balance.retrieve", side_effect=stripe.APIConnectionError("down")):
             self.assertEqual(cloud_setup._stripe_key_check("sk_test_x")[0], "warn")
+
+
+class HealthBodyTests(TestCase):
+    def test_database_false_is_unhealthy(self):
+        self.assertTrue(cloud_setup._reported_unhealthy('{"ok": true, "db": false}'))
+        self.assertTrue(cloud_setup._reported_unhealthy('{"ok": false}'))
+        self.assertTrue(cloud_setup._reported_unhealthy('{"status": "ok", "database": "disconnected"}'))
+        self.assertEqual(cloud_setup._reported_unhealthy('{"ok": true, "db": true}'), "")
+
+    def test_web_page_on_health_path_fails(self):
+        class Resp:
+            status = 200
+            headers = {"Content-Type": "text/html"}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self, n):
+                return b"<!doctype html><html></html>"
+
+        with patch("urllib.request.urlopen", return_value=Resp()):
+            ok, message = cloud_setup._health_check("https://x.example/health")
+        self.assertFalse(ok)
+        self.assertIn("web page", message)
