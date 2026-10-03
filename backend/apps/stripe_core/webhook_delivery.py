@@ -156,6 +156,8 @@ def _classify_probe_status(status: int | None, body: str) -> tuple[str, bool]:
     if status == 500:
         return "handler_error", True
     if 200 <= status < 300:
+        if snippet.lstrip("\ufeff \r\n\t").startswith(("<!doctype", "<html")):
+            return "route_missing", False  # a static site answering every path, not a webhook handler
         return "ok", True
     return "unknown", False
 
