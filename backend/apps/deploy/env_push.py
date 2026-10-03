@@ -102,6 +102,23 @@ PRESET_VAULT_KEYS: dict[str, list[str]] = {
     "ai-memory-engine": AI_MEMORY_ENGINE_VAULT_KEYS,
 }
 
+# Admin account the app creates on deploy; the Studio generates and keeps the password in the vault.
+GENERATED_ADMIN_SLUGS: frozenset[str] = frozenset({"kistie-store"})
+
+
+def ensure_generated_admin_credentials(project: Project) -> dict[str, str]:
+    if (project.slug or "").strip().lower() not in GENERATED_ADMIN_SLUGS:
+        return {}
+    if not get_secret(project, "DJANGO_SUPERUSER_PASSWORD"):
+        set_secret(project, "DJANGO_SUPERUSER_PASSWORD", secrets.token_urlsafe(24))
+    if not get_secret(project, "DJANGO_SUPERUSER_USERNAME"):
+        set_secret(project, "DJANGO_SUPERUSER_USERNAME", "admin")
+    return {
+        "DJANGO_SUPERUSER_USERNAME": get_secret(project, "DJANGO_SUPERUSER_USERNAME"),
+        "DJANGO_SUPERUSER_PASSWORD": get_secret(project, "DJANGO_SUPERUSER_PASSWORD"),
+    }
+
+
 # Apps that read Stripe settings under their own prefix (e.g. Specwright's pydantic env_prefix).
 ENV_PREFIX_MIRRORS: dict[str, str] = {"specwright": "SPECWRIGHT_"}
 
@@ -349,6 +366,8 @@ def build_env_var_payload(
     if preset_vars and vault_vars:
         vault_vars = _apply_vault_overrides(preset_vars, vault_vars)
     merged = merge_env_vars(preset=preset_vars or None, vault=vault_vars or None, inline=variables)
+    for key, value in ensure_generated_admin_credentials(project).items():
+        merged.setdefault(key, value)
     prefix = ENV_PREFIX_MIRRORS.get((project.slug or "").strip().lower())
     if prefix:
         for key in [k for k in merged if k.startswith("STRIPE_")]:
