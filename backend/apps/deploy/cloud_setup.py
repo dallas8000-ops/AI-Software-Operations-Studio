@@ -130,17 +130,15 @@ def _health_check(url: str) -> tuple[bool, str]:
         with urllib.request.urlopen(request, timeout=HEALTH_TIMEOUT_SECONDS) as response:
             code = response.status
             body = response.read(4000).decode("utf-8", errors="replace")
-            content_type = response.headers.get("Content-Type", "")
     except urllib.error.HTTPError as exc:
         code = exc.code
         body = ""
-        content_type = ""
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return False, f"{url} unreachable ({exc})"
     if not 200 <= code < 400:
         return False, f"{url} returned HTTP {code}"
     path = urlparse(url).path
-    if path not in ("", "/") and ("text/html" in content_type.lower() or body.lstrip("\ufeff \r\n\t").lower().startswith(("<!doctype", "<html"))):
+    if path not in ("", "/") and (body.lstrip("\ufeff \r\n\t").lower().startswith(("<!doctype", "<html"))):
         return False, f"{url} returned a web page, not a health response (no API health endpoint is serving this path)"
     reported = _reported_unhealthy(body)
     if reported:
