@@ -21,6 +21,7 @@ RAILWAY_VARS = {
 @override_settings(VAULT_MASTER_KEY="c" * 64)
 @patch.dict("os.environ", {"RAILWAY_API_TOKEN": "railway-token"})
 @patch("apps.deploy.cloud_setup._health_check", return_value=(True, "HTTP 200"))
+@patch("apps.deploy.cloud_setup._stripe_key_check", new=lambda key: ("pass", "accepted"))
 @patch("apps.deploy.cloud_setup._webhook_check", return_value=("pass", "registered"))
 @patch("apps.deploy.cloud_setup._signed_webhook_check", return_value=("pass", "accepted"))
 @patch("apps.deploy.env_push.get_railway_env_vars", return_value=dict(RAILWAY_VARS))
@@ -230,3 +231,23 @@ class StripeCatalogTests(TestCase):
             repairs = cloud_setup._auto_repair(None, outcome)
         run.assert_called_once()
         self.assertEqual(repairs[0]["repair"], "provision_stripe_catalog")
+
+class StripeKeyCheckTests(TestCase):
+    def test_rejected_key_fails(self):
+        import stripe
+        from apps.deploy import cloud_setup
+
+        with patch("stripe.Balance.retrieve", side_effect=stripe.AuthenticationError("bad key")):
+            self.assertEqual(cloud_setup._stripe_key_check("sk_test_x")[0], "fail")
+
+    def test_accepted_key_passes(self):
+        from apps.deploy import cloud_setup
+        with patch("stripe.Balance.retrieve", return_value={}):
+            self.assertEqual(cloud_setup._stripe_key_check("sk_test_x")[0], "pass")
+
+    def test_network_error_is_only_a_warning(self):
+        import stripe
+        from apps.deploy import cloud_setup
+
+        with patch("stripe.Balance.retrieve", side_effect=stripe.APIConnectionError("down")):
+            self.assertEqual(cloud_setup._stripe_key_check("sk_test_x")[0], "warn")
