@@ -95,3 +95,11 @@ class WebhookDeliveryStatsTests(TestCase):
 
         self.assertTrue(assessment.needsRepair)
         self.assertEqual(assessment.repairReason, "high_failure_rate")
+
+
+class HtmlWebhookResponseTests(TestCase):
+    def test_web_page_response_is_not_a_webhook_handler(self):
+        from apps.stripe_core.webhook_delivery import _classify_probe_status
+
+        self.assertEqual(_classify_probe_status(200, "<!doctype html><html>")[0], "route_missing")
+        self.assertEqual(_classify_probe_status(200, '{"received": true}')[0], "ok")
