@@ -56,7 +56,7 @@ PORTFOLIO_LIVE_URLS: dict[str, str] = {
     "kistieStore": "https://kistie-store-production.up.railway.app",
     "pcCheckerExtreme": "https://pc-checker-extreme-production.up.railway.app",
     "righandFrontend": "https://righand-production.up.railway.app",
-    "dbopsWeb": "https://dbops-web-production.up.railway.app",
+    "dbopsWeb": "https://dbops.gilliomfrontlinedigital.com",
     "specwrightWeb": "https://specwright-web-production.up.railway.app",
     "enPowerCommand": "https://enpowercommand-production.up.railway.app",
     "marketingSite": "https://gilliomfrontlinedigital.com",
