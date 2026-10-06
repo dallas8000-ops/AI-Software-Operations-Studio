@@ -154,7 +154,7 @@ export default function BillingPage() {
           </p>
         </div>
         {subscription?.isActive && (
-          <ScoreRing score={100} label="Pro" sublabel={subscription.tier || "active"} size={72} />
+          <ScoreRing score={100} label={subscription.tier || "Active"} sublabel={subscription.status || "active"} size={72} />
         )}
       </div>
 
@@ -179,9 +179,8 @@ export default function BillingPage() {
             <code>backend/.env</code> and restart the backend:
           </p>
           <pre className="verify-pre billing-env-pre">{`SAAS_STRIPE_SECRET_KEY=sk_test_...
-SAAS_STRIPE_PRICE_STARTER=price_...
-SAAS_STRIPE_PRICE_PRO=price_...
-SAAS_STRIPE_PRICE_ENTERPRISE=price_...
+SAAS_STRIPE_PRICE_TEAM=price_...    # $149/month
+SAAS_STRIPE_PRICE_AGENCY=price_...  # $399/month
 SAAS_BILLING_RETURN_URL=http://127.0.0.1:5173`}</pre>
           <p className="muted vault-hint">
             For your <strong>client app&apos;s</strong> Stripe integration, use Projects → vault → pipeline — not

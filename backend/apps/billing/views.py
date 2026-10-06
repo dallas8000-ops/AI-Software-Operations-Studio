@@ -32,13 +32,19 @@ def _stripe_object_payload(value) -> dict:
     return dict(value)
 
 
+# Self-serve tiers offered at checkout. Enterprise is sold by contact, not checkout.
+# Amounts are display values; Stripe charges whatever the configured Price defines.
+PLAN_TIERS = (
+    ("Team", "SAAS_STRIPE_PRICE_TEAM", 14900),
+    ("Agency", "SAAS_STRIPE_PRICE_AGENCY", 39900),
+)
+
+
 def _plans() -> list[dict]:
     plans = []
-    for tier, price_id, label, amount in (
-        ("Starter", getattr(settings, "SAAS_STRIPE_PRICE_STARTER", ""), "Starter", 900),
-        ("Pro", getattr(settings, "SAAS_STRIPE_PRICE_PRO", ""), "Pro", 7900),
-        ("Enterprise", getattr(settings, "SAAS_STRIPE_PRICE_ENTERPRISE", ""), "Enterprise", 7900),
-    ):
+    for tier, setting_name, amount in PLAN_TIERS:
+        price_id = getattr(settings, setting_name, "")
+        label = tier
         if price_id:
             plans.append(
                 {

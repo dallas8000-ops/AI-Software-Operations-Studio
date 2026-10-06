@@ -275,12 +275,12 @@ VAULT_MASTER_KEY = resolve_vault_master_key()
 STRIPE_INSTALLER_CLI = os.environ.get("STRIPE_INSTALLER_CLI", "")
 
 # Platform billing (Stripe Installer SaaS — dogfood our own integration)
-# Pricing: $79/mo flat rate per customer (7900 cents)
+# Studio subscription tiers: Team $149/mo, Agency $399/mo (Enterprise: contact sales).
+# Each *_PRICE_* variable holds a Stripe Price ID; the amount charged is defined in Stripe.
 SAAS_STRIPE_SECRET_KEY = os.environ.get("SAAS_STRIPE_SECRET_KEY", "")
 SAAS_STRIPE_WEBHOOK_SECRET = os.environ.get("SAAS_STRIPE_WEBHOOK_SECRET", "")
-SAAS_STRIPE_PRICE_STARTER = os.environ.get("SAAS_STRIPE_PRICE_STARTER", "")
-SAAS_STRIPE_PRICE_PRO = os.environ.get("SAAS_STRIPE_PRICE_PRO", "")
-SAAS_STRIPE_PRICE_ENTERPRISE = os.environ.get("SAAS_STRIPE_PRICE_ENTERPRISE", "")
+SAAS_STRIPE_PRICE_TEAM = os.environ.get("SAAS_STRIPE_PRICE_TEAM", "")
+SAAS_STRIPE_PRICE_AGENCY = os.environ.get("SAAS_STRIPE_PRICE_AGENCY", "")
 SAAS_BILLING_RETURN_URL = os.environ.get("SAAS_BILLING_RETURN_URL") or APP_PUBLIC_URL
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-05-27.dahlia")
 

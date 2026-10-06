@@ -11,9 +11,8 @@ from apps.billing.views import _stripe_object_payload
 
 @override_settings(
     SAAS_STRIPE_SECRET_KEY="rk_test_billing",
-    SAAS_STRIPE_PRICE_STARTER="price_starter",
-    SAAS_STRIPE_PRICE_PRO="price_pro",
-    SAAS_STRIPE_PRICE_ENTERPRISE="price_enterprise",
+    SAAS_STRIPE_PRICE_TEAM="price_pro",
+    SAAS_STRIPE_PRICE_AGENCY="price_agency",
     SAAS_BILLING_RETURN_URL="https://app.example.com",
 )
 class CheckoutTests(APITestCase):
