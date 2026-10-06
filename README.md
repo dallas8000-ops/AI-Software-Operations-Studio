@@ -11,6 +11,7 @@ Version 2.0 is the current production release. This README now documents the mer
 > - **Stack:** Django 5 + DRF · React 18 + TypeScript (Vite) · PostgreSQL · Celery + Redis · Docker · Railway
 > - **Security:** AES-256-GCM per-project vault (write-only from the browser, masked in every API response) · TOTP MFA · org RBAC · Stripe webhook signature verification · CI secret-leak gate and dependency audit
 > - **Quality:** 230+ backend tests, Django checks, smoke test and production Docker image validation on every push
+> - **Pricing:** Starter $9/month · Pro $79/month · Enterprise: contact sales
 > - **Live:** https://studio.gilliomfrontlinedigital.com
 
 ## What Studio Does
