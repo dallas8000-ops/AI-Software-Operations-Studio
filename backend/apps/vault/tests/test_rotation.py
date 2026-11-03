@@ -8,6 +8,9 @@ NEW = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
 
 
 class VaultRotationTests(SimpleTestCase):
+    # rotate_vault_master_key now runs inside transaction.atomic(), which opens a connection.
+    databases = {"default"}
+
     @override_settings(VAULT_MASTER_KEY=OLD)
     def test_rejects_same_key(self):
         with self.assertRaises(VaultConfigurationError):

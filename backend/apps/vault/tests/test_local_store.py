@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -46,12 +47,14 @@ class MasterKeyTests(TestCase):
                     key = resolve_vault_master_key()
             self.assertEqual(key, "e" * 64)
 
-    def test_railway_without_env_does_not_persist_generated_key(self):
+    def test_railway_without_env_refuses_instead_of_generating_a_key(self):
+        # A throwaway key on Railway would make every stored secret unreadable after redeploy.
         with tempfile.TemporaryDirectory() as tmp:
             with patch.dict("os.environ", {"RAILWAY_ENVIRONMENT": "production"}, clear=False):
+                os.environ.pop("VAULT_MASTER_KEY", None)
                 with patch("apps.vault.master_key.portfolio_data_dir", return_value=Path(tmp)):
-                    key = resolve_vault_master_key()
-            self.assertEqual(len(key), 64)
+                    with self.assertRaises(RuntimeError):
+                        resolve_vault_master_key()
             self.assertFalse((Path(tmp) / "vault-master-key").exists())
 
 
