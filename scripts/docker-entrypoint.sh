@@ -30,8 +30,15 @@ case "$PROCESS_TYPE" in
     exec daphne -b 0.0.0.0 -p "${PORT:-8080}" config.asgi:application
     ;;
   worker)
-    echo "Starting Celery worker (scale to N replicas)"
-    exec python process_supervisor.py celery -A config worker -l info
+    # Prefork defaults to os.cpu_count(), which on Railway reports the HOST's
+    # cores, spawning dozens of idle children (~3.2 GB RSS, billed per GB).
+    # Cap explicitly; scale with replicas, not hidden host-core fan-out.
+    CELERY_CONCURRENCY="${CELERY_CONCURRENCY:-2}"
+    CELERY_MAX_MEMORY_PER_CHILD_KB="${CELERY_MAX_MEMORY_PER_CHILD_KB:-200000}"
+    echo "Starting Celery worker — concurrency=${CELERY_CONCURRENCY} (scale to N replicas)"
+    exec python process_supervisor.py celery -A config worker -l info \
+      --concurrency="${CELERY_CONCURRENCY}" \
+      --max-memory-per-child="${CELERY_MAX_MEMORY_PER_CHILD_KB}"
     ;;
   beat)
     echo "Starting Celery beat — run exactly ONE replica"
